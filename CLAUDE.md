@@ -40,6 +40,39 @@ ghim `analyzer` 6.x (chỉ hiểu Dart 3.4) nên không parse nổi cú pháp Da
 `Expected an identifier` ngay trên `main.dart` mặc định, chưa cần code của mình.
 `hive_ce` kéo `analyzer` 14.x nên chạy sạch. API `@HiveType` / `@HiveField` giữ nguyên.
 
+## Lệnh build web — KHÔNG dùng `--wasm`
+
+Dự án luôn build bằng **`flutter build web`** thường. **Không dùng `--wasm`.**
+
+`flutter build web` sẽ in cảnh báo `Wasm dry run failed`. **Bỏ qua cảnh báo này.**
+Nguyên nhân đã truy rõ: `flutter_tts` kéo theo `jni` (Android) và `objective_c` (iOS),
+hai gói đó dùng `dart:ffi` mà WasmGC không hỗ trợ. Trên web chúng không được nạp
+nên bản build JS chạy bình thường.
+
+## Định nghĩa "đã thuộc"
+
+Thẻ **đang ở Hộp 5** thì tính là đã thuộc. Không có điều kiện nào thêm.
+Dùng cho số liệu "tổng số từ đã thuộc" ở màn hình Tổng quan.
+
+## Giãn cách thật của lịch ôn
+
+Bảng ở SOP mục 3.1 chỉ ghi khoảng cách **tối thiểu**. Giãn cách thật đo được
+(xem `test/schedule_matrix_test.dart`, test tự khoá lại các con số này):
+
+| Hộp | Tối thiểu | Dải thật | Khi ôn đúng hạn |
+|---|---|---|---|
+| 1 | 1 | 1 ngày | luôn 1 ngày |
+| 2 | 2 | 2–4 ngày | |
+| 3 | 5 | 5–11 ngày | |
+| 4 | 12 | 12–18 ngày | **nhóm chẵn 18 ngày, nhóm lẻ 12 ngày** |
+| 5 | 20 | 20–50 ngày | |
+
+Con số "mỗi thẻ 14 ngày một lần" ở mục 3.2 là **sai thực tế**. Thẻ chỉ đi qua
+Hộp 4 đúng một lần: đúng thì lên thẳng Hộp 5, sai thì rơi về Hộp 1 — không có
+nhánh nào đưa thẻ ở Hộp 4 quay lại chính Hộp 4. Thẻ chỉ lên Hộp 4 từ Hộp 3, mà
+Hộp 3 chỉ đến hạn Thứ Ba; Thứ Ba cộng 12 ngày rơi đúng Chủ Nhật nên nhóm lẻ dừng
+ngay tại đó (12 ngày), nhóm chẵn đi tiếp tới Thứ Bảy (18 ngày).
+
 ## Phạm vi ứng dụng
 
 - **Flutter web PWA**, chỉ chạy trên trình duyệt.

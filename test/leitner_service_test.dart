@@ -131,16 +131,44 @@ void main() {
       }
     });
 
-    test('Từ lần ôn thứ hai trở đi, nhịp Hộp 4 ổn định đúng 14 ngày', () {
-      // Lần đầu vào Hộp 4 có thể lệch 12 đến 18 ngày tuỳ hôm lên hộp. Nhưng khi
-      // thẻ đã đúng thứ của nhóm mình rồi thì mọi lần sau phải cách đều 14 ngày.
-      var current = service.calculateNextReviewDate(
-          4, evenCardId, DateTime(2025, 5, 4));
-      for (var i = 0; i < 6; i++) {
-        final next = service.calculateNextReviewDate(4, evenCardId, current);
-        expect(next.difference(current).inDays, 14);
-        current = next;
-      }
+    test('Thẻ chỉ đi qua Hộp 4 đúng một lần, nên không có nhịp lặp lại', () {
+      // Điểm này rất dễ hiểu nhầm. Hộp 4 KHÔNG phải một trạm ôn đi ôn lại: trả
+      // lời đúng thì thẻ lên thẳng Hộp 5, trả lời sai thì rơi về Hộp 1. Không
+      // có nhánh nào đưa thẻ ở Hộp 4 quay lại chính Hộp 4.
+      final card = makeCard(id: evenCardId, boxNumber: 4);
+
+      final correct = service.applyAnswer(
+          card: card, isCorrect: true, logId: 'log-1', now: DateTime(2025, 5, 6));
+      expect(correct.updatedCard.boxNumber, 5);
+
+      final wrong = service.applyAnswer(
+          card: card, isCorrect: false, logId: 'log-2', now: DateTime(2025, 5, 6));
+      expect(wrong.updatedCard.boxNumber, 1);
+    });
+
+    test('Vào Hộp 4 từ Thứ Ba: nhóm chẵn 18 ngày, nhóm lẻ 12 ngày', () {
+      // Thẻ chỉ lên Hộp 4 khi trả lời đúng ở Hộp 3, mà Hộp 3 chỉ đến hạn vào
+      // Thứ Ba. Vậy nếu người học ôn đúng hạn thì ngày lên Hộp 4 luôn là Thứ Ba.
+      // Thứ Ba cộng 12 ngày rơi đúng vào Chủ Nhật: nhóm lẻ dừng ngay tại đó,
+      // còn nhóm chẵn phải đi tiếp 6 ngày nữa mới tới Thứ Bảy.
+      final tuesday = DateTime(2025, 5, 6);
+      expect(tuesday.weekday, DateTime.tuesday);
+      expect(tuesday.add(const Duration(days: 12)).weekday, DateTime.sunday);
+
+      expect(
+        service
+            .calculateNextReviewDate(4, evenCardId, tuesday)
+            .difference(tuesday)
+            .inDays,
+        18,
+      );
+      expect(
+        service
+            .calculateNextReviewDate(4, oddCardId, tuesday)
+            .difference(tuesday)
+            .inDays,
+        12,
+      );
     });
   });
 

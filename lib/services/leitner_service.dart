@@ -118,6 +118,17 @@ class LeitnerService {
       matches: (date, cardId) => date.weekday == DateTime.tuesday,
     ),
     // Hộp 4 — Thứ Bảy hoặc Chủ Nhật, tuỳ nhóm của thẻ (mục 3.2).
+    //
+    // Lưu ý về con số "14 ngày" ghi trong mục 3.2: đó KHÔNG phải giãn cách thật.
+    // Thẻ chỉ đi qua Hộp 4 đúng một lần — trả lời đúng thì lên thẳng Hộp 5, sai
+    // thì rơi về Hộp 1 — nên không tồn tại nhịp lặp 14 ngày nào cả.
+    //
+    // Giãn cách thật khi người học ôn đúng hạn: thẻ chỉ lên Hộp 4 từ Hộp 3, mà
+    // Hộp 3 chỉ đến hạn vào Thứ Ba. Thứ Ba cộng 12 ngày rơi đúng Chủ Nhật, nên
+    // nhóm lẻ dừng ngay tại đó (12 ngày) còn nhóm chẵn phải đi tiếp tới Thứ Bảy
+    // (18 ngày). Nếu người học ôn muộn thì mốc xuất phát lệch khỏi Thứ Ba và
+    // giãn cách trải trong dải 12 đến 18 ngày.
+    // Xem `test/schedule_matrix_test.dart` để có bảng số liệu đầy đủ.
     4: BoxSchedule(
       minimumGapDays: 12,
       matches: (date, cardId) => date.weekday == weekendDayForCard(cardId),
