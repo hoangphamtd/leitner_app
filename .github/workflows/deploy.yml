@@ -63,6 +63,28 @@ jobs:
       - name: Build web
         run: flutter build web --no-web-resources-cdn --base-href /leitner_app/
 
+      # Đóng dấu mã build vào service worker và trang chủ.
+      #
+      # BƯỚC NÀY BẮT BUỘC, đừng bỏ. Không có nó thì nội dung `sw.js` giống hệt
+      # nhau qua mọi lần build, trình duyệt coi service worker không đổi nên
+      # KHÔNG cài lại — và người dùng kẹt vĩnh viễn ở bản cũ. Đã xảy ra thật.
+      #
+      # Dấu gồm mã commit rút gọn và ngày giờ build, để nhìn là biết ngay máy
+      # đang chạy bản nào.
+      - name: Đóng dấu mã build
+        run: |
+          VERSION="${GITHUB_SHA::7}-$(date -u +%Y%m%d.%H%M)"
+          echo "Mã build: $VERSION"
+          sed -i "s/__BUILD_VERSION__/$VERSION/g" build/web/sw.js
+          sed -i "s/__BUILD_VERSION__/$VERSION/g" build/web/index.html
+          # Kiểm chứng ngay tại đây: còn sót chuỗi thay thế nào là hỏng cơ chế
+          # cập nhật, phải dừng workflow chứ không được đẩy lên.
+          if grep -q "__BUILD_VERSION__" build/web/sw.js build/web/index.html; then
+            echo "LỖI: vẫn còn __BUILD_VERSION__ chưa được thay"
+            exit 1
+          fi
+          grep -o "leitner-[a-f0-9]\{7\}-[0-9.]*" build/web/sw.js | head -1
+
       - name: Chuẩn bị trang cho Pages
         uses: actions/configure-pages@v5
 

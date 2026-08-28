@@ -3,20 +3,55 @@
 // Service worker tự viết cho Leitner.
 //
 // Vì sao phải tự viết: từ Flutter 3.2x, service worker do `flutter build web`
-// sinh ra đã bị khai tử — file `flutter_service_worker.js` bây giờ KHÔNG cache
-// gì cả, nó chỉ tự gỡ đăng ký chính mình. Dùng cấu hình mặc định thì app không
-// chạy nổi khi mất mạng, mà chạy offline lại là một trong ba nguyên tắc bắt
-// buộc của dự án. Đã kiểm chứng: tắt máy chủ rồi tải lại trang thì trình duyệt
-// báo trang lỗi.
+// sinh ra đã bị khai tử — `flutter_service_worker.js` không cache gì cả, nó chỉ
+// tự gỡ đăng ký chính mình. Dùng cấu hình mặc định thì app không chạy nổi khi
+// mất mạng, mà chạy offline là một trong ba nguyên tắc bắt buộc của dự án.
 //
-// Chiến lược: nạp sẵn phần lõi lúc cài đặt, còn lại thì gặp gì cache nấy.
-// Không dùng danh sách toàn bộ tài nguyên như bản Flutter cũ, vì danh sách đó
-// phải sinh lại sau mỗi lần build và rất dễ lệch với thực tế.
+// ---------------------------------------------------------------------------
+// BÀI HỌC TỪ MỘT LỖI THẬT — đọc trước khi sửa file này
+// ---------------------------------------------------------------------------
+// Bản đầu tiên của file này khiến người dùng KẸT CỨNG ở bản cũ: đẩy bản mới lên
+// máy chủ mà máy họ vẫn chạy bản cũ, không có cách nào biết. Hai nguyên nhân
+// cộng hưởng:
+//
+//   1. `CACHE_NAME` là hằng số cố định. Sửa app không làm đổi nội dung file
+//      này, nên trình duyệt coi service worker y hệt bản cũ và KHÔNG cài lại.
+//      Không cài lại thì `activate` không chạy, cache cũ không bao giờ bị dọn.
+//
+//   2. Mọi tài nguyên đều lấy cache trước. Mà `main.dart.js` — chứa TOÀN BỘ mã
+//      ứng dụng — có tên cố định, không kèm mã băm. Vậy là dù `index.html` được
+//      tải mới, nó vẫn nạp đúng file mã cũ nằm trong cache.
+//
+// Cách chữa, và cũng là hai điều tuyệt đối không được phá:
+//
+//   * `BUILD_VERSION` được thay bằng mã build thật ở khâu triển khai, nên nội
+//     dung file này đổi sau mỗi lần build. Trình duyệt thấy khác byte thì mới
+//     chịu cài service worker mới.
+//   * Nhóm file "khung ứng dụng" lấy MẠNG TRƯỚC. Chậm hơn một chút khi mạng
+//     yếu, đổi lại người dùng không bao giờ kẹt ở bản cũ.
+// ---------------------------------------------------------------------------
 
-const CACHE_NAME = 'leitner-v1';
+// Khâu triển khai thay chuỗi này bằng mã commit. Chạy ở máy phát triển thì giữ
+// nguyên, và đó cũng là dấu hiệu nhận biết bản chưa qua triển khai.
+const BUILD_VERSION = '__BUILD_VERSION__';
 
-// Những file bắt buộc phải có để app khởi động được. Thiếu một trong số này thì
-// mở offline chỉ ra trang trắng.
+// Tên kho cache gắn với phiên bản build. Đổi tên đồng nghĩa với việc `activate`
+// sẽ dọn sạch kho cũ và nạp lại toàn bộ từ máy chủ.
+const CACHE_NAME = 'leitner-' + BUILD_VERSION;
+
+// Khung ứng dụng: những file đổi theo từng bản build và có tên CỐ ĐỊNH.
+// Vì tên không đổi nên cache không tự phân biệt được bản cũ với bản mới —
+// nhóm này bắt buộc phải lấy mạng trước.
+const APP_SHELL = [
+  '',
+  '/',
+  'index.html',
+  'flutter_bootstrap.js',
+  'main.dart.js',
+  'manifest.json',
+];
+
+// Nạp sẵn lúc cài để lần mở đầu tiên khi mất mạng vẫn chạy được.
 const CORE_ASSETS = [
   './',
   'index.html',
@@ -27,6 +62,15 @@ const CORE_ASSETS = [
   'icons/Icon-192.png',
   'icons/Icon-512.png',
 ];
+
+/// Yêu cầu này có thuộc nhóm khung ứng dụng không.
+function laKhungUngDung(url) {
+  const duongDan = url.pathname;
+  return APP_SHELL.some((ten) => {
+    if (ten === '' || ten === '/') return duongDan.endsWith('/');
+    return duongDan.endsWith('/' + ten);
+  });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -45,7 +89,9 @@ self.addEventListener('install', (event) => {
           }
         })
       );
-      // Nhận việc ngay, không chờ tab cũ đóng hết.
+      // Nhận việc ngay, không xếp hàng chờ tab cũ đóng hết. Không có dòng này
+      // thì bản mới nằm im ở trạng thái chờ cho tới khi người dùng đóng sạch
+      // mọi tab — trên điện thoại gần như không bao giờ xảy ra.
       await self.skipWaiting();
     })()
   );
@@ -54,15 +100,24 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Dọn cache của phiên bản cũ, nếu không mỗi lần đổi CACHE_NAME lại để lại
-      // một kho rác trong máy người dùng.
+      // Dọn kho của mọi phiên bản khác. Đây là chỗ khiến bản mới thật sự thay
+      // được bản cũ: kho rỗng thì lần tải kế tiếp lấy hết từ máy chủ.
       const names = await caches.keys();
       await Promise.all(
-        names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+        names
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
       );
+      // Chiếm quyền điều khiển các tab đang mở ngay lập tức.
       await self.clients.claim();
     })()
   );
+});
+
+self.addEventListener('message', (event) => {
+  // Cho phép trang chủ động giục service worker mới vào việc, dùng khi người
+  // dùng bấm nút "Tải lại" trên dải thông báo cập nhật.
+  if (event.data === 'skipWaiting') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -76,21 +131,27 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Yêu cầu điều hướng (mở trang, tải lại, mở từ màn hình chính) luôn phải trả
-  // về được index.html, kể cả khi hoàn toàn mất mạng — đây chính là chỗ mà bản
-  // mặc định của Flutter thất bại.
-  if (request.mode === 'navigate') {
+  // Yêu cầu điều hướng và các file khung ứng dụng: LẤY MẠNG TRƯỚC.
+  //
+  // Đây là điểm mấu chốt đã nói ở đầu file. Những file này mang mã của bản build
+  // mà tên lại cố định, nên lấy cache trước là cầm chắc chuyện phục vụ bản cũ.
+  // Mất mạng thì mới lùi về cache — lúc đó bản cũ vẫn hơn là không có gì.
+  if (request.mode === 'navigate' || laKhungUngDung(url)) {
     event.respondWith(
       (async () => {
         try {
           const fresh = await fetch(request);
-          const cache = await caches.open(CACHE_NAME);
-          cache.put('index.html', fresh.clone());
+          if (fresh && fresh.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, fresh.clone());
+          }
           return fresh;
         } catch (error) {
           const cache = await caches.open(CACHE_NAME);
           const cached =
-            (await cache.match('index.html')) || (await cache.match('./'));
+            (await cache.match(request)) ||
+            (await cache.match('index.html')) ||
+            (await cache.match('./'));
           if (cached) return cached;
           throw error;
         }
@@ -99,8 +160,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Các tài nguyên còn lại: ưu tiên lấy từ cache cho nhanh và chạy được offline,
-  // không có thì tải về rồi cache lại cho lần sau.
+  // Còn lại là tài nguyên nặng và gần như bất biến trong một bản build:
+  // CanvasKit, phông chữ, biểu tượng. Nhóm này lấy cache trước cho nhanh và để
+  // chạy được offline; kho cache đã được đặt tên theo phiên bản nên không sợ
+  // lẫn giữa hai bản build.
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE_NAME);

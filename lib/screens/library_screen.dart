@@ -214,7 +214,10 @@ class _CardList extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
+      // Khoảng đệm dưới phải đủ chỗ cho nút nổi THÊM TỪ, nếu không nó che mất
+      // dòng cuối và người dùng không cuộn tới được. Nút cao khoảng 48, cộng lề
+      // 16 và thanh điều hướng bên dưới.
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 140),
       itemCount: cards.length,
       separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (context, index) {

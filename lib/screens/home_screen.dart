@@ -281,10 +281,12 @@ class _BoxGrid extends StatelessWidget {
       crossAxisCount: 5,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      // Khối hơi cao hơn rộng để chứa đủ ba dòng chữ trên màn hình hẹp.
-      childAspectRatio: 0.72,
+      mainAxisSpacing: 6,
+      crossAxisSpacing: 6,
+      // Khối cao hơn rộng để chứa đủ ba dòng chữ trên màn hình hẹp. Con số này
+      // đã thử ở bề ngang 390 (iPhone thường) — hạ thêm nữa thì lưới chiếm quá
+      // nhiều chiều cao và đẩy nút HỌC HÔM NAY xuống dưới tầm ngón cái.
+      childAspectRatio: 0.66,
       children: [
         for (var boxNumber = 1; boxNumber <= 5; boxNumber++)
           BoxTile(

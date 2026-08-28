@@ -41,4 +41,13 @@ class WebMetrics {
   String get locationHash => '';
 
   bool get isStandalone => false;
+
+  /// Mã build đang chạy. `__BUILD_VERSION__` nghĩa là bản chạy ở máy phát triển.
+  String get buildVersion => 'dev';
+
+  /// Đã có bản mới tải xong, chỉ chờ tải lại trang để thay thế.
+  bool get hasUpdate => false;
+
+  /// Giục service worker mới vào việc rồi tải lại trang.
+  void applyUpdate() {}
 }

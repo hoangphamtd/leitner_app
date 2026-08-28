@@ -6,6 +6,7 @@ import 'screens/diagnostics_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/diagnostics_service.dart';
 import 'utils/web_metrics/web_metrics.dart';
+import 'widgets/update_banner.dart';
 
 /// Màu chủ đạo của ứng dụng.
 const Color seedColor = Color(0xFF2E6F5E);
@@ -45,7 +46,9 @@ class LeitnerApp extends StatelessWidget {
           event.position.dx,
           event.position.dy,
         ),
-        child: child ?? const SizedBox.shrink(),
+        // Dải báo cập nhật bọc ngoài cùng để hiện được trên MỌI màn hình, kể cả
+        // lúc người dùng đang ở giữa buổi học.
+        child: UpdateBanner(child: child ?? const SizedBox.shrink()),
       ),
       home: moChanDoan ? const DiagnosticsScreen() : const MainShell(),
     );

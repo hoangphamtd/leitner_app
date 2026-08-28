@@ -92,6 +92,29 @@ class WebMetrics {
     return value.isA<JSBoolean>() && (value! as JSBoolean).toDart;
   }
 
+  /// Mã build đang chạy.
+  ///
+  /// Trả về 'dev' khi chuỗi thay thế còn nguyên, tức bản này chưa qua khâu
+  /// triển khai — đó chính là dấu hiệu để phân biệt bản máy nhà với bản thật.
+  String get buildVersion {
+    final value = _kho?.getProperty<JSAny?>('phienBan'.toJS);
+    if (!value.isA<JSString>()) return 'khong ro';
+    final raw = (value! as JSString).toDart;
+    return raw.startsWith('__') ? 'dev' : raw;
+  }
+
+  /// Đã có bản mới tải xong, chỉ chờ tải lại trang để thay thế.
+  bool get hasUpdate {
+    final value = _kho?.getProperty<JSAny?>('coBanMoi'.toJS);
+    return value.isA<JSBoolean>() && (value! as JSBoolean).toDart;
+  }
+
+  /// Tải lại trang để bản mới có hiệu lực.
+  ///
+  /// Service worker mới đã chiếm quyền từ trước (nhờ `skipWaiting`), nhưng mã
+  /// đang chạy trong trang này là mã cũ đã nạp lúc mở — chỉ tải lại mới đổi được.
+  void applyUpdate() => web.window.location.reload();
+
   int _soNguyen(JSObject obj, String key) {
     final value = obj.getProperty<JSAny?>(key.toJS);
     return value.isA<JSNumber>() ? (value! as JSNumber).toDartInt : 0;

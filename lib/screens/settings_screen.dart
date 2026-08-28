@@ -8,6 +8,7 @@ import '../providers/deck_provider.dart';
 import '../providers/library_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/pronunciation_service.dart';
+import '../utils/web_metrics/web_metrics.dart';
 import '../widgets/content_width_limit.dart';
 import 'diagnostics_screen.dart';
 
@@ -51,6 +52,8 @@ class SettingsScreen extends StatelessWidget {
                     const _BackupSection(),
                     const SizedBox(height: 24),
                     const _ChanDoanSection(),
+                    const SizedBox(height: 20),
+                    const _PhienBanFooter(),
                   ],
                 ),
               ),
@@ -411,6 +414,38 @@ class _ChanDoanSection extends StatelessWidget {
         style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
         icon: const Icon(Icons.speed_rounded),
         label: const Text('MỞ MÀN HÌNH CHẨN ĐOÁN'),
+      ),
+    );
+  }
+}
+
+/// Mã phiên bản build, hiện ở cuối màn hình Cài đặt.
+///
+/// Có dòng này để khi người dùng báo lỗi, cả hai bên biết chắc đang nói về bản
+/// nào — thay vì đoán xem máy họ đã nhận bản mới hay chưa.
+class _PhienBanFooter extends StatelessWidget {
+  const _PhienBanFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    const web = WebMetrics();
+    final scheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Column(
+        children: [
+          Text(
+            'Leitner — bản ${web.buildVersion}',
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            web.buildVersion == 'dev'
+                ? 'Bản chạy thử ở máy phát triển'
+                : 'Mở lại app để nhận bản mới nếu có',
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }

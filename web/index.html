@@ -36,7 +36,12 @@
     window.__leitner = {
       mocMoTrang: Date.now(),
       khungDauTien_ms: null,
-      loiJS: []
+      loiJS: [],
+      // Khâu triển khai thay chuỗi này bằng mã commit thật. Còn nguyên nghĩa là
+      // bản chạy ở máy phát triển, chưa qua triển khai.
+      phienBan: '__BUILD_VERSION__',
+      // Bật lên khi phát hiện có bản mới đã tải xong và sẵn sàng thay thế.
+      coBanMoi: false
     };
 
     function __ghiLoi(nguon, thongDiep, chiTiet) {
@@ -109,8 +114,40 @@
     // không giành băng thông với lần tải đầu tiên của chính ứng dụng.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function (error) {
-          console.warn('Không đăng ký được service worker:', error);
+        navigator.serviceWorker
+          .register('sw.js', {
+            // BẮT BUỘC. Không có tuỳ chọn này, trình duyệt được phép lấy chính
+            // file sw.js từ bộ nhớ đệm HTTP, nên có thể mất tới một ngày mới
+            // nhận ra có bản mới. Đây đúng là cái bẫy đã khiến người dùng kẹt
+            // ở bản cũ.
+            updateViaCache: 'none'
+          })
+          .then(function (reg) {
+            // Chủ động hỏi máy chủ xem có bản mới không, ngay mỗi lần mở app.
+            reg.update().catch(function () {});
+
+            // Có bản mới đang được cài: theo dõi cho tới lúc nó sẵn sàng.
+            reg.addEventListener('updatefound', function () {
+              var moi = reg.installing;
+              if (!moi) return;
+              moi.addEventListener('statechange', function () {
+                // `controller` khác null nghĩa là trang đang được một service
+                // worker cũ phục vụ — tức đây là một bản CẬP NHẬT, không phải
+                // lần cài đầu tiên. Chỉ khi đó mới cần mời người dùng tải lại.
+                if (moi.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.__leitner.coBanMoi = true;
+                }
+              });
+            });
+          })
+          .catch(function (error) {
+            console.warn('Không đăng ký được service worker:', error);
+          });
+
+        // Service worker mới đã chiếm quyền điều khiển. Trang hiện tại vẫn đang
+        // chạy mã cũ đã nạp từ trước, nên phải tải lại mới thấy bản mới.
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          window.__leitner.coBanMoi = true;
         });
       });
     }
