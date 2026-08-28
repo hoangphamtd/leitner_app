@@ -1,8 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/flashcard.dart';
+import '../services/illustration_service.dart';
 import 'highlighted_sentence.dart';
 
 /// Khung chung của cả hai mặt thẻ, để mặt trước và mặt sau có cùng kích thước
@@ -99,7 +99,7 @@ class CardFront extends StatelessWidget {
           ),
           // Ảnh chiếm khoảng 40% chiều cao thẻ. Không có ảnh thì để khoảng
           // trống nhã nhặn, tuyệt đối không hiện biểu tượng lỗi.
-          Expanded(flex: 4, child: _CardImage(imagePath: card.imagePath)),
+          Expanded(flex: 4, child: _CardImage(card: card)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -127,15 +127,23 @@ class CardFront extends StatelessWidget {
 }
 
 /// Vùng ảnh minh hoạ.
+///
+/// Ảnh KHÔNG nằm trong gói cài đặt mà tải về theo nhu cầu — xem lý do dài trong
+/// `IllustrationService`. Vì vậy ở đây phải chịu được cả ba trạng thái: chưa
+/// có ảnh, đang tải, và tải hỏng. Cả ba đều phải để thẻ học được bình thường.
 class _CardImage extends StatelessWidget {
-  final String? imagePath;
+  final Flashcard card;
 
-  const _CardImage({required this.imagePath});
+  const _CardImage({required this.card});
 
   @override
   Widget build(BuildContext context) {
-    final path = imagePath;
-    if (path == null || path.isEmpty) {
+    // Đọc dịch vụ nếu có. Không có cũng không sao: các bài test dựng riêng lẻ
+    // một mặt thẻ sẽ không phải dựng cả cây provider chỉ để xem cái ảnh.
+    final anh = context.read<IllustrationService?>();
+    final url = anh?.urlCho(card);
+
+    if (url == null) {
       // Khoảng trống có chủ ý: giữ đúng bố cục để thẻ có ảnh và thẻ không ảnh
       // không nhảy kích thước khi chuyển qua lại.
       return const SizedBox.expand();
@@ -143,11 +151,29 @@ class _CardImage extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Image.file(
-        File(path),
+      child: Image.network(
+        url.toString(),
         fit: BoxFit.contain,
-        // Ảnh hỏng hay thiếu file thì lặng lẽ trả về khoảng trống, đúng yêu cầu
-        // "không hiện icon lỗi" ở Phần 4.
+        // Chỉ báo trong lúc ảnh đang về. Cố ý nhỏ và nhạt: ảnh là thứ phụ trợ,
+        // không được kéo mắt khỏi từ đang học.
+        loadingBuilder: (context, child, tienDo) {
+          if (tienDo == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: tienDo.expectedTotalBytes == null
+                    ? null
+                    : tienDo.cumulativeBytesLoaded / tienDo.expectedTotalBytes!,
+              ),
+            ),
+          );
+        },
+        // Ảnh hỏng, thiếu file, hay đang mất mạng mà ảnh chưa từng tải về: lặng
+        // lẽ trả về khoảng trống. Tuyệt đối không hiện biểu tượng lỗi — thiếu
+        // ảnh là chuyện bình thường theo thiết kế, không phải sự cố.
         errorBuilder: (context, error, stackTrace) => const SizedBox.expand(),
       ),
     );

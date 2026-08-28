@@ -7,6 +7,7 @@ import '../providers/deck_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/study_provider.dart';
 import '../utils/platform_info/platform_info.dart';
+import '../widgets/illustration_progress.dart';
 import '../widgets/box_tile.dart';
 import '../widgets/busy_button.dart';
 import '../widgets/content_width_limit.dart';
@@ -268,6 +269,8 @@ class _ReadyView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
+            // Chỉ hiện khi ảnh đang về, xong là tự biến mất.
+            const IllustrationProgress(),
             if (showBackupReminder) ...[
               _BackupReminder(onDismiss: onDismissBackupReminder),
               const SizedBox(height: 16),

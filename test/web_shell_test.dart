@@ -106,6 +106,58 @@ void main() {
     });
   });
 
+  group('web/sw.js — kho ảnh phải sống sót qua mỗi lần triển khai', () {
+    late String sw;
+
+    setUpAll(() {
+      sw = _boChuThich(File('web/sw.js').readAsStringSync());
+    });
+
+    test('Kho ảnh KHÔNG được gắn với mã build', () {
+      // Đây là điểm chết người. `activate` xoá mọi kho khác `CACHE_NAME`, mà
+      // `CACHE_NAME` lại đổi theo từng bản build. Nếu ảnh nằm chung kho đó thì
+      // mỗi lần triển khai là người dùng mất sạch ảnh đã tải và phải tải lại
+      // hàng chục MB.
+      expect(sw, contains("const CACHE_ANH = 'leitner-anh-v1';"));
+      expect(
+        RegExp(r'CACHE_ANH\s*=\s*[^;]*BUILD_VERSION').hasMatch(sw),
+        isFalse,
+        reason: 'Gắn kho ảnh vào mã build là xoá sạch ảnh sau mỗi lần cập nhật',
+      );
+    });
+
+    test('Bước activate phải GIỮ LẠI kho ảnh', () {
+      expect(
+        sw,
+        contains('name !== CACHE_NAME && name !== CACHE_ANH'),
+        reason: 'Thiếu vế thứ hai là kho ảnh bị dọn sạch mỗi lần triển khai',
+      );
+    });
+
+    test('KHÔNG có ảnh nào được nạp sẵn lúc cài', () {
+      // Nạp sẵn ảnh là quay lại đúng bài toán 105 MB đã tránh: lần mở đầu tiên
+      // phải tải hết mới dùng được.
+      final core = RegExp(r'const CORE_ASSETS = \[([^\]]*)\]')
+          .firstMatch(sw)
+          ?.group(1);
+      expect(core, isNotNull);
+      expect(core, isNot(contains('anh/')));
+      expect(core, isNot(contains('.webp')));
+    });
+
+    test('Ảnh được nhận diện và phục vụ từ kho riêng', () {
+      expect(sw, contains("url.pathname.includes('/anh/')"));
+      expect(sw, contains('caches.open(CACHE_ANH)'));
+      // Anh la noi dung bat bien: tham so truy van khong duoc lam truot kho.
+      expect(sw, contains('ignoreSearch: true'));
+    });
+
+    test('Kho ảnh có trần để không phình vô hạn', () {
+      expect(sw, contains('TRAN_SO_ANH'));
+      expect(sw, contains('donBotAnhCu'));
+    });
+  });
+
   group('web/flutter_bootstrap.js', () {
     test('Gọi load() KHÔNG tham số, để Flutter đừng đăng ký service worker', () {
       final js = _boChuThich(

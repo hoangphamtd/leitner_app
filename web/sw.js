@@ -39,6 +39,29 @@ const BUILD_VERSION = '__BUILD_VERSION__';
 // sẽ dọn sạch kho cũ và nạp lại toàn bộ từ máy chủ.
 const CACHE_NAME = 'leitner-' + BUILD_VERSION;
 
+// Kho riêng cho ảnh minh hoạ, CỐ Ý KHÔNG gắn với mã build.
+//
+// Đây là điểm khác biệt quan trọng nhất giữa ảnh và mọi tài nguyên khác. Ảnh là
+// nội dung bất biến: `anh/apple.webp` của bản build này với bản build sau là
+// một file y hệt. Nếu để ảnh chung kho với mã ứng dụng thì bước `activate` —
+// vốn xoá mọi kho khác phiên bản — sẽ ném sạch ảnh đã tải sau MỖI lần triển
+// khai, và người dùng phải tải lại từ đầu. Với bộ 3500 thẻ thì đó là hàng chục
+// MB mỗi lần cập nhật.
+//
+// Đổi số cuối chỉ khi định cố ý dọn sạch ảnh cũ, ví dụ lúc đổi cách đặt tên file.
+const CACHE_ANH = 'leitner-anh-v1';
+
+// Trần số ảnh giữ lại. Vượt trần thì bỏ bớt ảnh vào kho sớm nhất.
+//
+// 1200 ảnh cỡ 30 KB là khoảng 36 MB — thoải mái cho một người học chăm, mà vẫn
+// không có nguy cơ phình vô hạn tới mức trình duyệt tự xoá cả kho.
+const TRAN_SO_ANH = 1200;
+
+/// Yêu cầu này có phải ảnh minh hoạ không.
+function laAnhMinhHoa(url) {
+  return url.pathname.includes('/anh/');
+}
+
 // Khung ứng dụng: những file đổi theo từng bản build và có tên CỐ ĐỊNH.
 // Vì tên không đổi nên cache không tự phân biệt được bản cũ với bản mới —
 // nhóm này bắt buộc phải lấy mạng trước.
@@ -105,7 +128,9 @@ self.addEventListener('activate', (event) => {
       const names = await caches.keys();
       await Promise.all(
         names
-          .filter((name) => name !== CACHE_NAME)
+          // GIỮ LẠI kho ảnh. Ảnh không đổi giữa các bản build, xoá đi chỉ tổ
+          // bắt người dùng tải lại hàng chục MB sau mỗi lần cập nhật.
+          .filter((name) => name !== CACHE_NAME && name !== CACHE_ANH)
           .map((name) => caches.delete(name))
       );
       // Chiếm quyền điều khiển các tab đang mở ngay lập tức.
@@ -160,6 +185,34 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Ảnh minh hoạ: kho RIÊNG, lấy cache trước.
+  //
+  // Không có ảnh nào được nạp sẵn lúc cài. Ảnh chỉ vào kho khi ứng dụng thật sự
+  // yêu cầu nó, mà ứng dụng chỉ yêu cầu ảnh của thẻ đã kích hoạt. Nhờ vậy máy
+  // người dùng chỉ giữ vài MB thay vì cả bộ 105 MB.
+  if (laAnhMinhHoa(url)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_ANH);
+        // `ignoreSearch` là cố ý. Ảnh minh hoạ là nội dung BẤT BIẾN, định danh
+        // bằng tên file; phần tham số phía sau dấu hỏi không đổi nội dung ảnh.
+        // Không bỏ qua nó thì một địa chỉ kèm `?v=2` sẽ trượt kho và ảnh biến
+        // mất khi mất mạng. Đã đo được thật trên trình duyệt: cùng một ảnh, gọi
+        // trơn thì hiện, gọi kèm tham số thì hỏng.
+        const cached = await cache.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+
+        const response = await fetch(request);
+        if (response && response.status === 200 && response.type === 'basic') {
+          await cache.put(request, response.clone());
+          donBotAnhCu(cache);
+        }
+        return response;
+      })()
+    );
+    return;
+  }
+
   // Còn lại là tài nguyên nặng và gần như bất biến trong một bản build:
   // CanvasKit, phông chữ, biểu tượng. Nhóm này lấy cache trước cho nhanh và để
   // chạy được offline; kho cache đã được đặt tên theo phiên bản nên không sợ
@@ -180,3 +233,21 @@ self.addEventListener('fetch', (event) => {
     })()
   );
 });
+
+/// Bỏ bớt ảnh cũ khi kho vượt trần.
+///
+/// Cache API không có sẵn cơ chế loại bỏ theo tuổi, nhưng `keys()` trả về đúng
+/// thứ tự đã thêm vào, nên bỏ từ đầu danh sách là bỏ ảnh vào kho sớm nhất.
+/// Không chờ kết quả: dọn kho là việc nền, không được làm chậm cú tải ảnh.
+async function donBotAnhCu(cache) {
+  try {
+    const khoa = await cache.keys();
+    if (khoa.length <= TRAN_SO_ANH) return;
+    const thua = khoa.length - TRAN_SO_ANH;
+    for (let i = 0; i < thua; i++) {
+      await cache.delete(khoa[i]);
+    }
+  } catch (error) {
+    console.warn('[sw] Không dọn được kho ảnh', error);
+  }
+}

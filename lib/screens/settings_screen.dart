@@ -9,6 +9,7 @@ import '../providers/library_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/pronunciation_service.dart';
 import '../utils/web_metrics/web_metrics.dart';
+import '../widgets/illustration_progress.dart';
 import '../widgets/content_width_limit.dart';
 import 'diagnostics_screen.dart';
 
@@ -434,6 +435,8 @@ class _PhienBanFooter extends StatelessWidget {
     return Center(
       child: Column(
         children: [
+          const IllustrationStatusLine(),
+          const SizedBox(height: 12),
           Text(
             'Leitner — bản ${web.buildVersion}',
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),

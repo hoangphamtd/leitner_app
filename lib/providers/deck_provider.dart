@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/app_settings.dart';
@@ -8,6 +10,7 @@ import '../repositories/session_state_repository.dart';
 import '../repositories/settings_repository.dart';
 import '../repositories/study_log_repository.dart';
 import '../utils/date_utils.dart' as du;
+import '../services/illustration_service.dart';
 import '../services/leitner_service.dart';
 import '../services/stats_service.dart';
 import '../utils/logger.dart';
@@ -28,6 +31,10 @@ class DeckProvider extends ChangeNotifier {
   final SessionStateRepository sessionStateRepository;
   final LeitnerService leitner;
   final StatsService stats;
+
+  /// Dịch vụ tải ảnh minh hoạ. Null thì bỏ qua hẳn phần ảnh — các bài test
+  /// không quan tâm tới ảnh sẽ không phải dựng thêm gì.
+  final IllustrationService? illustrations;
   final Logger _log = const Logger('DeckProvider');
 
   DeckProvider({
@@ -37,6 +44,7 @@ class DeckProvider extends ChangeNotifier {
     required this.sessionStateRepository,
     required this.leitner,
     this.stats = const StatsService(),
+    this.illustrations,
   });
 
   DeckStatus _status = DeckStatus.loading;
@@ -175,6 +183,11 @@ class DeckProvider extends ChangeNotifier {
 
       _status = DeckStatus.ready;
       _errorMessage = null;
+
+      // Tải ảnh cho các thẻ đã kích hoạt. CỐ Ý không `await`: ảnh về dần trong
+      // nền, còn giao diện phải hiện ngay. Thẻ chưa có ảnh vẫn học được bình
+      // thường nên không có lý do gì bắt người dùng chờ.
+      unawaited(illustrations?.dongBo(cards) ?? Future<void>.value());
     } catch (error, stackTrace) {
       // Không nuốt lỗi: ghi lại đầy đủ rồi chuyển sang trạng thái lỗi để giao
       // diện hiển thị, thay vì im lặng đưa ra màn hình trống.

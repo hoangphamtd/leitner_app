@@ -21,6 +21,7 @@ import 'repositories/session_state_repository.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/study_log_repository.dart';
 import 'services/diagnostics_service.dart';
+import 'services/illustration_service.dart';
 import 'services/leitner_service.dart';
 import 'services/pronunciation_service.dart';
 import 'services/vocabulary_importer.dart';
@@ -79,6 +80,9 @@ Future<void> _khoiDong() async {
 
   final leitner = LeitnerService();
   final pronunciation = PronunciationService();
+  // Ảnh minh hoạ tải dần theo nhu cầu, không đóng gói cùng app — xem lý do dài
+  // trong `IllustrationService`.
+  final illustrations = IllustrationService();
 
   swBootstrap.stop();
   chanDoan.bootstrapMs = swBootstrap.elapsedMilliseconds;
@@ -86,6 +90,9 @@ Future<void> _khoiDong() async {
   runApp(
     MultiProvider(
       providers: [
+        // Đặt TRƯỚC DeckProvider vì DeckProvider sẽ gọi sang nó sau mỗi lần
+        // đọc lại danh sách thẻ.
+        ChangeNotifierProvider<IllustrationService>.value(value: illustrations),
         ChangeNotifierProvider(
           create: (_) => DeckProvider(
             cardRepository: cardRepository,
@@ -93,6 +100,7 @@ Future<void> _khoiDong() async {
             settingsRepository: settingsRepository,
             sessionStateRepository: sessionStateRepository,
             leitner: leitner,
+            illustrations: illustrations,
           )..refresh(),
         ),
         ChangeNotifierProvider(

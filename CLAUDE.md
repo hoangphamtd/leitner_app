@@ -137,6 +137,38 @@ lần mở app, và dải "Có bản cập nhật — TẢI LẠI" ở `lib/widg
 
 Mã phiên bản hiện ở cuối màn hình Cài đặt để luôn biết máy đang chạy bản nào.
 
+## Ảnh minh hoạ — KHÔNG đóng gói cùng app
+
+Bộ đầy đủ 3500 ảnh WebP 512px, mỗi ảnh khoảng 30 KB, cộng lại **khoảng 105 MB**.
+Nạp sẵn chừng đó thì lần mở đầu phải tải hết mới dùng được và nhiều khả năng
+vượt hạn mức lưu trữ của Safari trên iPhone. Vì vậy:
+
+* Ảnh nằm ở `web/anh/`, phục vụ tại `<địa chỉ app>/anh/`, **không** có mặt trong
+  `CORE_ASSETS` của `web/sw.js`.
+* `lib/services/illustration_service.dart` chỉ tải ảnh của thẻ **đã kích hoạt**,
+  ba ảnh một lượt. Thẻ trong thư viện chưa kích hoạt thì bỏ qua.
+* Thiếu ảnh **không** được cản việc học: thẻ vẫn hiện đủ từ, phiên âm, nghĩa và
+  câu ví dụ. Ảnh hỏng thì để trống, tuyệt đối không hiện biểu tượng lỗi.
+
+### Kho ảnh phải sống sót qua mỗi lần triển khai
+
+`CACHE_ANH = 'leitner-anh-v1'` **cố ý không gắn với mã build**, và bước
+`activate` phải giữ lại nó:
+
+```js
+.filter((name) => name !== CACHE_NAME && name !== CACHE_ANH)
+```
+
+Bỏ vế thứ hai là mỗi lần triển khai người dùng mất sạch ảnh đã tải — hàng chục MB
+tải lại từ đầu. `test/web_shell_test.dart` khoá lại cả hai điều này.
+
+Tra kho ảnh dùng `{ ignoreSearch: true }`: ảnh là nội dung bất biến, phần sau dấu
+hỏi không đổi nội dung. **Đo được thật trên trình duyệt:** không có cờ đó thì
+`anh/x.png?v=2` trượt kho và ảnh biến mất khi mất mạng, trong khi `anh/x.png`
+vẫn hiện.
+
+Cách chạy lại phép kiểm chứng offline: xem `web/anh/README.md`.
+
 ## Cây widget trên Navigator — phải tự cấp Overlay
 
 Phần bọc trong `MaterialApp.builder` nằm **TRÊN** Navigator, mà `Overlay` lại do
