@@ -120,14 +120,19 @@ class LeitnerService {
     // Thẻ chỉ đi qua Hộp 4 đúng một lần — trả lời đúng thì lên thẳng Hộp 5, sai
     // thì rơi về Hộp 1 — nên không tồn tại nhịp lặp 14 ngày nào cả.
     //
-    // Giãn cách thật khi người học ôn đúng hạn: thẻ chỉ lên Hộp 4 từ Hộp 3, mà
-    // Hộp 3 chỉ đến hạn vào Thứ Ba. Thứ Ba cộng 12 ngày rơi đúng Chủ Nhật, nên
-    // nhóm lẻ dừng ngay tại đó (12 ngày) còn nhóm chẵn phải đi tiếp tới Thứ Bảy
-    // (18 ngày). Nếu người học ôn muộn thì mốc xuất phát lệch khỏi Thứ Ba và
-    // giãn cách trải trong dải 12 đến 18 ngày.
+    // KHOẢNG CÁCH TỐI THIỂU LÀ 13 NGÀY, KHÔNG PHẢI 12 NHƯ BẢNG Ở MỤC 3.1.
+    // Đây là sửa đổi có chủ ý, vì con số 12 tạo ra một hệ quả không mong muốn:
+    // thẻ chỉ lên Hộp 4 từ Hộp 3, mà Hộp 3 chỉ đến hạn vào Thứ Ba. Thứ Ba cộng
+    // 12 ngày rơi ĐÚNG vào Chủ Nhật, nên nhóm lẻ dừng ngay tại đó (12 ngày)
+    // trong khi nhóm chẵn phải đi tiếp tới Thứ Bảy (18 ngày) — chênh nhau 50%.
+    // Thẻ được ôn dày hay thưa khi đó phụ thuộc vào mã băm của id, tức hoàn
+    // toàn ngẫu nhiên và chẳng liên quan gì tới độ khó của từ.
+    //
+    // Với 13 ngày, Thứ Ba cộng 13 rơi vào Thứ Hai nên CẢ HAI nhóm đều phải đi
+    // tiếp: nhóm chẵn 18 ngày, nhóm lẻ 19 ngày. Chênh đúng một ngày.
     // Xem `test/schedule_matrix_test.dart` để có bảng số liệu đầy đủ.
     4: BoxSchedule(
-      minimumGapDays: 12,
+      minimumGapDays: 13,
       matches: (date, cardId) => date.weekday == weekendDayForCard(cardId),
     ),
     // Hộp 5 — ngày 15 hằng tháng.

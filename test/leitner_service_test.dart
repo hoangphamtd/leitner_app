@@ -108,8 +108,10 @@ void main() {
 
         expect(result, DateTime(2025, 5, 17));
         expect(result.weekday, DateTime.saturday);
-        // Tối thiểu 12 ngày đưa mốc sớm nhất tới 16/05, là Thứ Sáu.
-        expect(DateTime(2025, 5, 16).weekday, DateTime.friday);
+        // Tối thiểu 13 ngày đưa mốc sớm nhất tới đúng Thứ Bảy 17/05, nên
+        // không phải duyệt thêm ngày nào. Kết quả của ví dụ trong SOP không
+        // đổi khi nâng khoảng cách tối thiểu từ 12 lên 13.
+        expect(DateTime(2025, 5, 17).weekday, DateTime.saturday);
       },
     );
   });
@@ -140,11 +142,11 @@ void main() {
           start,
         );
         expect(evenResult.weekday, DateTime.saturday);
-        expect(evenResult.difference(start).inDays, greaterThanOrEqualTo(12));
+        expect(evenResult.difference(start).inDays, greaterThanOrEqualTo(13));
 
         final oddResult = service.calculateNextReviewDate(4, oddCardId, start);
         expect(oddResult.weekday, DateTime.sunday);
-        expect(oddResult.difference(start).inDays, greaterThanOrEqualTo(12));
+        expect(oddResult.difference(start).inDays, greaterThanOrEqualTo(13));
       }
     });
 
@@ -171,14 +173,14 @@ void main() {
       expect(wrong.updatedCard.boxNumber, 1);
     });
 
-    test('Vào Hộp 4 từ Thứ Ba: nhóm chẵn 18 ngày, nhóm lẻ 12 ngày', () {
+    test('Vào Hộp 4 từ Thứ Ba: nhóm chẵn 18 ngày, nhóm lẻ 19 ngày', () {
       // Thẻ chỉ lên Hộp 4 khi trả lời đúng ở Hộp 3, mà Hộp 3 chỉ đến hạn vào
       // Thứ Ba. Vậy nếu người học ôn đúng hạn thì ngày lên Hộp 4 luôn là Thứ Ba.
-      // Thứ Ba cộng 12 ngày rơi đúng vào Chủ Nhật: nhóm lẻ dừng ngay tại đó,
-      // còn nhóm chẵn phải đi tiếp 6 ngày nữa mới tới Thứ Bảy.
+      // Thứ Ba cộng 13 ngày rơi vào Thứ Hai, nên CẢ HAI nhóm đều còn phải đi
+      // tiếp — đó chính là lý do nâng khoảng cách tối thiểu từ 12 lên 13.
       final tuesday = DateTime(2025, 5, 6);
       expect(tuesday.weekday, DateTime.tuesday);
-      expect(tuesday.add(const Duration(days: 12)).weekday, DateTime.sunday);
+      expect(tuesday.add(const Duration(days: 13)).weekday, DateTime.monday);
 
       expect(
         service
@@ -192,7 +194,7 @@ void main() {
             .calculateNextReviewDate(4, oddCardId, tuesday)
             .difference(tuesday)
             .inDays,
-        12,
+        19,
       );
     });
   });

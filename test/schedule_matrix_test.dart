@@ -107,10 +107,10 @@ void main() {
       expect(gaps['box2']!.reduce(max), 4);
       expect(gaps['box3']!.reduce(min), 5);
       expect(gaps['box3']!.reduce(max), 11);
-      expect(gaps['box4even']!.reduce(min), 12);
-      expect(gaps['box4even']!.reduce(max), 18);
-      expect(gaps['box4odd']!.reduce(min), 12);
-      expect(gaps['box4odd']!.reduce(max), 18);
+      expect(gaps['box4even']!.reduce(min), 13);
+      expect(gaps['box4even']!.reduce(max), 19);
+      expect(gaps['box4odd']!.reduce(min), 13);
+      expect(gaps['box4odd']!.reduce(max), 19);
     });
 
     test('Hộp 5 phụ thuộc ngày trong tháng, đo trên trọn một năm', () {
@@ -156,29 +156,29 @@ void main() {
       }
     });
 
-    test('Vào Hộp 4 từ Thứ Ba: nhóm chẵn 18 ngày, nhóm lẻ 12 ngày', () {
-      // Thứ Ba cộng 12 ngày rơi vào Chủ Nhật. Nhóm lẻ ôn Chủ Nhật nên dừng ngay
-      // tại đó — 12 ngày. Nhóm chẵn ôn Thứ Bảy nên phải đi tiếp 6 ngày nữa —
-      // 18 ngày.
+    test('Vào Hộp 4 từ Thứ Ba: nhóm chẵn 18 ngày, nhóm lẻ 19 ngày', () {
+      // Thứ Ba cộng 13 ngày rơi vào Thứ Hai, nên cả hai nhóm đều còn phải đi
+      // tiếp: nhóm chẵn thêm 5 ngày tới Thứ Bảy (18), nhóm lẻ thêm 6 ngày tới
+      // Chủ Nhật (19). Chênh nhau đúng một ngày.
       for (var week = 0; week < 8; week++) {
         final tuesday = mondayAnchor.add(Duration(days: 1 + week * 7));
         expect(tuesday.weekday, DateTime.tuesday);
 
         expect(
-          tuesday.add(const Duration(days: 12)).weekday,
-          DateTime.sunday,
-          reason: 'Thứ Ba cộng 12 ngày luôn là Chủ Nhật',
+          tuesday.add(const Duration(days: 13)).weekday,
+          DateTime.monday,
+          reason: 'Thứ Ba cộng 13 ngày luôn là Thứ Hai',
         );
 
         expect(
           gapFrom(4, tuesday, evenId),
           18,
-          reason: 'Nhóm chẵn phải chờ tới Thứ Bảy',
+          reason: 'Nhóm chẵn đi tiếp tới Thứ Bảy',
         );
         expect(
           gapFrom(4, tuesday, oddId),
-          12,
-          reason: 'Nhóm lẻ dừng ngay tại Chủ Nhật thứ 12',
+          19,
+          reason: 'Nhóm lẻ đi tiếp tới Chủ Nhật',
         );
       }
     });
@@ -229,11 +229,11 @@ void main() {
         );
 
         // Ôn đúng hạn thì Hộp 3 luôn rơi vào Thứ Ba, nên bước 3→4 là hằng số:
-        // Thứ Ba cộng 12 ngày là Chủ Nhật, nhóm lẻ dừng ngay tại đó (12 ngày),
-        // nhóm chẵn phải đi tiếp tới Thứ Bảy (18 ngày).
+        // Thứ Ba cộng 13 ngày là Thứ Hai, nên nhóm chẵn đi tiếp tới Thứ Bảy
+        // (18 ngày) còn nhóm lẻ tới Chủ Nhật (19 ngày).
         expect(box3Due.weekday, DateTime.tuesday);
         expect(g34Even, 18);
-        expect(g34Odd, 12);
+        expect(g34Odd, 19);
       }
       buffer.writeln('-' * 72);
       stdout.write(buffer.toString());

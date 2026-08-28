@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/session_state.dart';
 import '../providers/deck_provider.dart';
 import '../providers/study_provider.dart';
 import '../widgets/box_tile.dart';
@@ -11,12 +12,35 @@ import 'study_screen.dart';
 ///
 /// Widget ở đây chỉ đọc số liệu từ [DeckProvider] và gọi phương thức của nó,
 /// không tự tính toán gì. Mọi luật nghiệp vụ nằm ở tầng service.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  /// Chỉ hỏi về buổi học dở đúng một lần cho mỗi lần mở app.
+  ///
+  /// Không có cờ này thì mỗi lần provider báo có thay đổi, hộp thoại lại bật
+  /// lên — kể cả ngay sau khi người học vừa trả lời xong.
+  bool _askedAboutResume = false;
 
   @override
   Widget build(BuildContext context) {
     final deck = context.watch<DeckProvider>();
+
+    // Số liệu được nạp bất đồng bộ nên thời điểm sẵn sàng không rơi vào
+    // initState. Chờ khung hình vẽ xong rồi mới mở hộp thoại, để không dựng
+    // route ngay giữa lúc đang build.
+    if (deck.status == DeckStatus.ready &&
+        deck.hasResumableSession &&
+        !_askedAboutResume) {
+      _askedAboutResume = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _askAboutResume(context);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Leitner'), centerTitle: true),
@@ -30,6 +54,78 @@ class HomeScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// Hỏi người học có muốn tiếp tục buổi dở của hôm nay không.
+  Future<void> _askAboutResume(BuildContext context) async {
+    final deck = context.read<DeckProvider>();
+    final saved = deck.resumableSession;
+    if (saved == null) return;
+
+    final done = saved.completedCardIds.length;
+    final remaining = saved.queueCardIds.length;
+
+    final shouldResume = await showDialog<bool>(
+      context: context,
+      // Bắt buộc chọn một trong hai, vì bấm ra ngoài rồi bắt đầu buổi mới sẽ
+      // âm thầm bỏ mất tiến độ dở dang.
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Tiếp tục buổi học dở?'),
+        content: Text(
+          'Buổi học hôm nay còn dang dở: đã xong $done thẻ, '
+          'còn $remaining thẻ chưa học.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('BẮT ĐẦU LẠI'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(120, 44),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            child: const Text('TIẾP TỤC'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (shouldResume == true) {
+      await _resumeSession(saved);
+    } else if (shouldResume == false) {
+      await deck.discardResumableSession();
+    }
+  }
+
+  /// Dựng lại buổi dở rồi mở thẳng màn hình Học.
+  Future<void> _resumeSession(SessionState saved) async {
+    final deck = context.read<DeckProvider>();
+    final study = context.read<StudyProvider>();
+    final navigator = Navigator.of(context);
+
+    final cardsById = await deck.loadCardsById(saved.queueCardIds);
+    await study.restore(saved, cardsById);
+    if (!mounted) return;
+
+    if (study.status != StudyStatus.studying) {
+      // Thẻ trong hàng đợi đã bị xoá hết, không còn gì để tiếp tục.
+      await deck.refresh();
+      return;
+    }
+
+    await navigator.push(
+      MaterialPageRoute(builder: (_) => const StudyScreen()),
+    );
+    await deck.refresh();
+    study.reset();
   }
 }
 
@@ -145,7 +241,7 @@ class _StudyButton extends StatelessWidget {
     final queue = await deckProvider.buildTodayQueue();
     if (queue.isEmpty) return;
 
-    studyProvider.start(queue);
+    await studyProvider.start(queue);
     await navigator.push(
       MaterialPageRoute(builder: (_) => const StudyScreen()),
     );

@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 
 import '../models/app_settings.dart';
 import '../models/flashcard.dart';
+import '../models/session_state.dart';
 import '../repositories/card_repository.dart';
+import '../repositories/session_state_repository.dart';
 import '../repositories/settings_repository.dart';
 import '../repositories/study_log_repository.dart';
+import '../utils/date_utils.dart' as du;
 import '../services/leitner_service.dart';
 import '../services/stats_service.dart';
 import '../utils/logger.dart';
@@ -22,6 +25,7 @@ class DeckProvider extends ChangeNotifier {
   final CardRepository cardRepository;
   final StudyLogRepository logRepository;
   final SettingsRepository settingsRepository;
+  final SessionStateRepository sessionStateRepository;
   final LeitnerService leitner;
   final StatsService stats;
   final Logger _log = const Logger('DeckProvider');
@@ -30,6 +34,7 @@ class DeckProvider extends ChangeNotifier {
     required this.cardRepository,
     required this.logRepository,
     required this.settingsRepository,
+    required this.sessionStateRepository,
     required this.leitner,
     this.stats = const StatsService(),
   });
@@ -78,6 +83,59 @@ class DeckProvider extends ChangeNotifier {
   /// Có thể bắt đầu buổi học hay không.
   bool get canStudy => _dueCount > 0;
 
+  SessionState? _resumableSession;
+
+  /// Buổi học dở của HÔM NAY, còn thẻ để học tiếp. Null nếu không có.
+  ///
+  /// Buổi dở từ ngày trước đã bị [refresh] tự xoá, nên thuộc tính này chỉ bao
+  /// giờ trả về buổi của đúng ngày hôm nay.
+  SessionState? get resumableSession => _resumableSession;
+
+  bool get hasResumableSession => _resumableSession != null;
+
+  /// Đọc buổi học dở, đồng thời dọn buổi đã cũ.
+  ///
+  /// Buổi dở chỉ có ý nghĩa trong đúng ngày nó bắt đầu: sang hôm sau, các thẻ đã
+  /// trả lời sai đều đã được hẹn lại và danh sách đến hạn cũng khác đi, nên tiếp
+  /// tục một hàng đợi cũ sẽ cho người học ôn sai lịch. Vì vậy buổi của ngày
+  /// trước bị xoá thẳng, không hỏi han gì.
+  Future<SessionState?> _loadResumableSession(DateTime today) async {
+    final saved = await sessionStateRepository.load();
+    if (saved == null) return null;
+
+    if (!du.DateUtils.isSameDay(saved.startedAt, today)) {
+      _log.info('Xoá buổi học dở từ ngày trước');
+      await sessionStateRepository.clear();
+      return null;
+    }
+    // Hàng đợi rỗng nghĩa là buổi đã xong mà ảnh chụp còn sót lại.
+    if (!saved.hasWork) {
+      await sessionStateRepository.clear();
+      return null;
+    }
+    return saved;
+  }
+
+  /// Bỏ buổi học dở đang lưu.
+  Future<void> discardResumableSession({DateTime? now}) async {
+    await sessionStateRepository.clear();
+    _resumableSession = null;
+    await refresh(now: now);
+  }
+
+  /// Tra các thẻ trong hàng đợi của buổi dở, theo mã.
+  ///
+  /// Trả về map để [StudyProvider.restore] dựng lại hàng đợi đúng thứ tự mà
+  /// không phải chạm vào repository.
+  Future<Map<String, Flashcard>> loadCardsById(Iterable<String> ids) async {
+    final wanted = ids.toSet();
+    final cards = await cardRepository.getAll();
+    return {
+      for (final card in cards)
+        if (wanted.contains(card.id)) card.id: card,
+    };
+  }
+
   /// Đọc lại toàn bộ số liệu từ kho.
   ///
   /// Gọi lúc mở app và sau mỗi lần dữ liệu đổi (học xong, kích hoạt thẻ mới).
@@ -97,6 +155,7 @@ class DeckProvider extends ChangeNotifier {
       _libraryCount = cards.where((card) => !card.isActive).length;
       _settings = settings;
       _remainingQuota = settings.remainingQuotaOn(today);
+      _resumableSession = await _loadResumableSession(today);
 
       _status = DeckStatus.ready;
       _errorMessage = null;

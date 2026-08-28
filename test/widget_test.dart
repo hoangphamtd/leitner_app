@@ -42,6 +42,7 @@ Widget wrapWithProviders({
   required FakeCardRepository cards,
   required FakeStudyLogRepository logs,
   required FakeSettingsRepository settings,
+  required FakeSessionStateRepository sessions,
   DeckProvider? deckProvider,
   StudyProvider? studyProvider,
 }) {
@@ -55,6 +56,7 @@ Widget wrapWithProviders({
               cardRepository: cards,
               logRepository: logs,
               settingsRepository: settings,
+              sessionStateRepository: sessions,
               leitner: leitner,
             ),
       ),
@@ -64,6 +66,7 @@ Widget wrapWithProviders({
             StudyProvider(
               cardRepository: cards,
               logRepository: logs,
+              sessionStateRepository: sessions,
               leitner: leitner,
             ),
       ),
@@ -76,11 +79,13 @@ void main() {
   late FakeCardRepository cards;
   late FakeStudyLogRepository logs;
   late FakeSettingsRepository settings;
+  late FakeSessionStateRepository sessions;
 
   setUp(() {
     cards = FakeCardRepository();
     logs = FakeStudyLogRepository();
     settings = FakeSettingsRepository();
+    sessions = FakeSessionStateRepository();
   });
 
   group('Màn hình Tổng quan', () {
@@ -89,6 +94,7 @@ void main() {
         cardRepository: cards,
         logRepository: logs,
         settingsRepository: settings,
+        sessionStateRepository: sessions,
         leitner: LeitnerService(),
       );
       await deck.refresh();
@@ -99,6 +105,7 @@ void main() {
           cards: cards,
           logs: logs,
           settings: settings,
+          sessions: sessions,
           deckProvider: deck,
         ),
       );
@@ -120,6 +127,7 @@ void main() {
         cardRepository: cards,
         logRepository: logs,
         settingsRepository: settings,
+        sessionStateRepository: sessions,
         leitner: LeitnerService(),
       );
       await deck.refresh();
@@ -130,6 +138,7 @@ void main() {
           cards: cards,
           logs: logs,
           settings: settings,
+          sessions: sessions,
           deckProvider: deck,
         ),
       );
@@ -155,6 +164,7 @@ void main() {
         cardRepository: cards,
         logRepository: logs,
         settingsRepository: settings,
+        sessionStateRepository: sessions,
         leitner: LeitnerService(),
       );
       await deck.refresh();
@@ -165,6 +175,7 @@ void main() {
           cards: cards,
           logs: logs,
           settings: settings,
+          sessions: sessions,
           deckProvider: deck,
         ),
       );
@@ -189,6 +200,7 @@ void main() {
         cardRepository: cards,
         logRepository: logs,
         settingsRepository: settings,
+        sessionStateRepository: sessions,
         leitner: LeitnerService(),
       );
       await deck.refresh();
@@ -205,6 +217,7 @@ void main() {
           cards: cards,
           logs: logs,
           settings: settings,
+          sessions: sessions,
           deckProvider: deck,
         ),
       );
@@ -222,9 +235,10 @@ void main() {
       final study = StudyProvider(
         cardRepository: cards,
         logRepository: logs,
+        sessionStateRepository: sessions,
         leitner: LeitnerService(),
       );
-      study.start(queue);
+      await study.start(queue);
 
       await tester.pumpWidget(
         wrapWithProviders(
@@ -232,6 +246,7 @@ void main() {
           cards: cards,
           logs: logs,
           settings: settings,
+          sessions: sessions,
           studyProvider: study,
         ),
       );

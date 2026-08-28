@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import '../models/flashcard.dart';
+import '../models/session_state.dart';
 import '../models/study_log.dart';
 import 'leitner_service.dart';
 
@@ -55,10 +56,10 @@ class StudySession {
   ///
   /// Ghi nhớ suốt buổi chứ không xoá sau khi người học sửa được, vì luật ở mục
   /// 3.4 quy định thẻ đã sai thì lượt đúng sau đó không được tính là lên hộp.
-  final Set<String> _failedCardIds = <String>{};
+  final Set<String> _failedCardIds;
 
   /// Mã các thẻ đã rời hàng đợi, dùng để đếm số thẻ học xong.
-  final Set<String> _completedCardIds = <String>{};
+  final Set<String> _completedCardIds;
 
   /// Nhật ký sinh ra trong buổi, theo đúng thứ tự trả lời.
   final List<StudyLog> _logs = <StudyLog>[];
@@ -69,14 +70,51 @@ class StudySession {
   /// được mã và so sánh kết quả một cách tất định.
   final String Function() logIdFactory;
 
-  int _correctAnswers = 0;
-  int _wrongAnswers = 0;
+  int _correctAnswers;
+  int _wrongAnswers;
+
+  /// Thời điểm buổi học bắt đầu. Dùng để biết buổi dở có phải của hôm nay không.
+  final DateTime startedAt;
 
   StudySession({
     required List<Flashcard> queue,
     required this.service,
     required this.logIdFactory,
-  }) : _queue = Queue<Flashcard>.of(queue);
+    DateTime? startedAt,
+  }) : _queue = Queue<Flashcard>.of(queue),
+       _failedCardIds = <String>{},
+       _completedCardIds = <String>{},
+       _correctAnswers = 0,
+       _wrongAnswers = 0,
+       startedAt = startedAt ?? DateTime.now();
+
+  /// Dựng lại một buổi học đang dở từ ảnh chụp đã lưu.
+  ///
+  /// [queue] phải được sắp đúng theo thứ tự trong [state.queueCardIds] — việc
+  /// tra mã thẻ ra đối tượng thẻ là của tầng gọi, vì chỉ tầng đó mới chạm được
+  /// vào kho dữ liệu.
+  StudySession.restore({
+    required List<Flashcard> queue,
+    required SessionState state,
+    required this.service,
+    required this.logIdFactory,
+  }) : _queue = Queue<Flashcard>.of(queue),
+       _failedCardIds = state.failedCardIds.toSet(),
+       _completedCardIds = state.completedCardIds.toSet(),
+       _correctAnswers = state.correctAnswers,
+       _wrongAnswers = state.wrongAnswers,
+       startedAt = state.startedAt;
+
+  /// Chụp lại trạng thái hiện tại để lưu xuống kho.
+  SessionState toState({required int initialCount}) => SessionState(
+    queueCardIds: [for (final card in _queue) card.id],
+    failedCardIds: _failedCardIds.toList(),
+    completedCardIds: _completedCardIds.toList(),
+    initialCount: initialCount,
+    correctAnswers: _correctAnswers,
+    wrongAnswers: _wrongAnswers,
+    startedAt: startedAt,
+  );
 
   /// Thẻ đang hiển thị. Null nghĩa là buổi học đã xong.
   Flashcard? get currentCard => _queue.isEmpty ? null : _queue.first;

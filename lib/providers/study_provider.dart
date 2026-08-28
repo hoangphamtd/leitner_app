@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/flashcard.dart';
+import '../models/session_state.dart';
 import '../repositories/card_repository.dart';
+import '../repositories/session_state_repository.dart';
 import '../repositories/study_log_repository.dart';
 import '../services/leitner_service.dart';
 import '../services/study_session.dart';
@@ -33,6 +35,7 @@ enum StudyStatus {
 class StudyProvider extends ChangeNotifier {
   final CardRepository cardRepository;
   final StudyLogRepository logRepository;
+  final SessionStateRepository sessionStateRepository;
   final LeitnerService leitner;
   final Uuid uuid;
   final Logger _log = const Logger('StudyProvider');
@@ -40,6 +43,7 @@ class StudyProvider extends ChangeNotifier {
   StudyProvider({
     required this.cardRepository,
     required this.logRepository,
+    required this.sessionStateRepository,
     required this.leitner,
     this.uuid = const Uuid(),
   });
@@ -84,12 +88,15 @@ class StudyProvider extends ChangeNotifier {
     return (done / _initialCount).clamp(0.0, 1.0);
   }
 
-  /// Bắt đầu một buổi học với hàng đợi đã dựng sẵn.
-  void start(List<Flashcard> queue) {
+  /// Bắt đầu một buổi học mới với hàng đợi đã dựng sẵn.
+  ///
+  /// Ghi đè lên buổi dở cũ nếu có — người học đã chọn học lại từ đầu.
+  Future<void> start(List<Flashcard> queue, {DateTime? now}) async {
     if (queue.isEmpty) {
       _status = StudyStatus.finished;
       _session = null;
       _initialCount = 0;
+      await _clearSavedState();
       notifyListeners();
       return;
     }
@@ -98,11 +105,49 @@ class StudyProvider extends ChangeNotifier {
       queue: queue,
       service: leitner,
       logIdFactory: () => uuid.v4(),
+      startedAt: now ?? DateTime.now(),
     );
     _initialCount = queue.length;
     _isRevealed = false;
     _status = StudyStatus.studying;
     _errorMessage = null;
+    await _persistState();
+    notifyListeners();
+  }
+
+  /// Dựng lại buổi học dở từ ảnh chụp đã lưu.
+  ///
+  /// [state] là ảnh chụp, [cardsById] là các thẻ đã đọc sẵn từ kho. Thẻ nào
+  /// trong hàng đợi mà không còn trong kho — người học đã xoá nó ở màn hình Thư
+  /// viện giữa chừng — thì bị bỏ qua thay vì làm hỏng cả buổi.
+  Future<void> restore(
+    SessionState state,
+    Map<String, Flashcard> cardsById,
+  ) async {
+    final queue = <Flashcard>[];
+    for (final id in state.queueCardIds) {
+      final card = cardsById[id];
+      if (card != null) queue.add(card);
+    }
+
+    if (queue.isEmpty) {
+      _log.warning('Buổi dở không còn thẻ nào hợp lệ, bỏ qua');
+      await _clearSavedState();
+      reset();
+      return;
+    }
+
+    _session = StudySession.restore(
+      queue: queue,
+      state: state,
+      service: leitner,
+      logIdFactory: () => uuid.v4(),
+    );
+    _initialCount = state.initialCount;
+    _isRevealed = false;
+    _status = StudyStatus.studying;
+    _errorMessage = null;
+    _log.info('Đã khôi phục buổi học dở, còn ${queue.length} thẻ');
     notifyListeners();
   }
 
@@ -130,9 +175,16 @@ class StudyProvider extends ChangeNotifier {
       _isRevealed = false;
       if (session.isFinished) {
         _status = StudyStatus.finished;
+        // Buổi đã xong thì ảnh chụp không còn ý nghĩa, xoá đi để lần mở app sau
+        // không hỏi "tiếp tục buổi dở?" một cách vô duyên.
+        await _clearSavedState();
         _log.info(
           'Buổi học kết thúc: ${session.stats.totalAnswers} lượt trả lời',
         );
+      } else {
+        // Lưu lại sau MỖI lượt, không đợi tới cuối buổi. Người học có thể bị
+        // ngắt bất cứ lúc nào.
+        await _persistState();
       }
     } catch (error, stackTrace) {
       _log.error('Không ghi được kết quả lượt trả lời', error, stackTrace);
@@ -142,7 +194,40 @@ class StudyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ghi ảnh chụp buổi học xuống kho.
+  ///
+  /// Lỗi ở đây chỉ ghi nhật ký chứ không làm hỏng buổi học đang diễn ra: mất
+  /// khả năng khôi phục thì khó chịu, nhưng chặn người học giữa chừng còn tệ hơn.
+  Future<void> _persistState() async {
+    final session = _session;
+    if (session == null) return;
+    try {
+      await sessionStateRepository.save(
+        session.toState(initialCount: _initialCount),
+      );
+    } catch (error, stackTrace) {
+      _log.error('Không lưu được trạng thái buổi học', error, stackTrace);
+    }
+  }
+
+  Future<void> _clearSavedState() async {
+    try {
+      await sessionStateRepository.clear();
+    } catch (error, stackTrace) {
+      _log.error('Không xoá được trạng thái buổi học', error, stackTrace);
+    }
+  }
+
+  /// Bỏ buổi dở đã lưu, dùng khi người học chọn học lại từ đầu.
+  Future<void> discardSavedSession() async {
+    await _clearSavedState();
+    reset();
+  }
+
   /// Dọn buổi học, đưa provider về trạng thái ban đầu.
+  ///
+  /// KHÔNG xoá ảnh chụp dưới kho: người học thoát giữa chừng thì buổi dở phải
+  /// còn nguyên để lần sau tiếp tục được.
   void reset() {
     _session = null;
     _initialCount = 0;

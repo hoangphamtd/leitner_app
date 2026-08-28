@@ -9,8 +9,10 @@ import 'providers/deck_provider.dart';
 import 'providers/study_provider.dart';
 import 'repositories/card_repository.dart';
 import 'repositories/hive_card_repository.dart';
+import 'repositories/hive_session_state_repository.dart';
 import 'repositories/hive_settings_repository.dart';
 import 'repositories/hive_study_log_repository.dart';
+import 'repositories/session_state_repository.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/study_log_repository.dart';
 import 'services/leitner_service.dart';
@@ -33,10 +35,13 @@ Future<void> main() async {
   final CardRepository cardRepository = HiveCardRepository();
   final StudyLogRepository logRepository = HiveStudyLogRepository();
   final SettingsRepository settingsRepository = HiveSettingsRepository();
+  final SessionStateRepository sessionStateRepository =
+      HiveSessionStateRepository();
 
   await cardRepository.init();
   await logRepository.init();
   await settingsRepository.init();
+  await sessionStateRepository.init();
 
   await _seedSampleVocabularyIfEmpty(cardRepository);
 
@@ -50,6 +55,7 @@ Future<void> main() async {
             cardRepository: cardRepository,
             logRepository: logRepository,
             settingsRepository: settingsRepository,
+            sessionStateRepository: sessionStateRepository,
             leitner: leitner,
           )..refresh(),
         ),
@@ -57,6 +63,7 @@ Future<void> main() async {
           create: (_) => StudyProvider(
             cardRepository: cardRepository,
             logRepository: logRepository,
+            sessionStateRepository: sessionStateRepository,
             leitner: leitner,
           ),
         ),

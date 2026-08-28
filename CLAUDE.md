@@ -64,14 +64,21 @@ Bảng ở SOP mục 3.1 chỉ ghi khoảng cách **tối thiểu**. Giãn cách
 | 1 | 1 | 1 ngày | luôn 1 ngày |
 | 2 | 2 | 2–4 ngày | |
 | 3 | 5 | 5–11 ngày | |
-| 4 | 12 | 12–18 ngày | **nhóm chẵn 18 ngày, nhóm lẻ 12 ngày** |
+| 4 | **13** (SOP ghi 12) | 13–19 ngày | **nhóm chẵn 18 ngày, nhóm lẻ 19 ngày** |
 | 5 | 20 | 20–50 ngày | |
+
+**Hộp 4 dùng 13 ngày chứ không phải 12 như bảng mục 3.1.** Đây là sửa đổi có chủ
+ý, đã được duyệt. Với 12 ngày: thẻ chỉ lên Hộp 4 từ Hộp 3, mà Hộp 3 chỉ đến hạn
+Thứ Ba; Thứ Ba cộng 12 rơi ĐÚNG Chủ Nhật nên nhóm lẻ dừng ngay (12 ngày) còn
+nhóm chẵn đi tiếp tới Thứ Bảy (18 ngày) — chênh 50%, mà việc thẻ rơi vào nhóm
+nào lại do mã băm `id` quyết định, hoàn toàn ngẫu nhiên và không liên quan tới độ
+khó của từ. Với 13 ngày, Thứ Ba cộng 13 rơi vào Thứ Hai nên cả hai nhóm đều phải
+đi tiếp: chẵn 18, lẻ 19. Ví dụ thứ ba ở mục 3.3 của SOP không đổi kết quả
+(Chủ Nhật 04/05 cộng 13 rơi đúng Thứ Bảy 17/05).
 
 Con số "mỗi thẻ 14 ngày một lần" ở mục 3.2 là **sai thực tế**. Thẻ chỉ đi qua
 Hộp 4 đúng một lần: đúng thì lên thẳng Hộp 5, sai thì rơi về Hộp 1 — không có
-nhánh nào đưa thẻ ở Hộp 4 quay lại chính Hộp 4. Thẻ chỉ lên Hộp 4 từ Hộp 3, mà
-Hộp 3 chỉ đến hạn Thứ Ba; Thứ Ba cộng 12 ngày rơi đúng Chủ Nhật nên nhóm lẻ dừng
-ngay tại đó (12 ngày), nhóm chẵn đi tiếp tới Thứ Bảy (18 ngày).
+nhánh nào đưa thẻ ở Hộp 4 quay lại chính Hộp 4.
 
 ## Phạm vi ứng dụng
 

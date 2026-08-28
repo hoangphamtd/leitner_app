@@ -1,7 +1,9 @@
 import 'package:leitner_app/models/app_settings.dart';
 import 'package:leitner_app/models/flashcard.dart';
+import 'package:leitner_app/models/session_state.dart';
 import 'package:leitner_app/models/study_log.dart';
 import 'package:leitner_app/repositories/card_repository.dart';
+import 'package:leitner_app/repositories/session_state_repository.dart';
 import 'package:leitner_app/repositories/settings_repository.dart';
 import 'package:leitner_app/repositories/study_log_repository.dart';
 import 'package:leitner_app/utils/date_utils.dart' as du;
@@ -121,4 +123,28 @@ class FakeSettingsRepository implements SettingsRepository {
 
   @override
   Future<void> save(AppSettings settings) async => current = settings;
+}
+
+/// Kho trạng thái buổi học giả.
+class FakeSessionStateRepository implements SessionStateRepository {
+  SessionState? current;
+
+  /// Số lần [clear] được gọi, để test kiểm chứng buổi học xong thì trạng thái
+  /// có thật sự bị xoá hay không.
+  int clearCount = 0;
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<SessionState?> load() async => current;
+
+  @override
+  Future<void> save(SessionState state) async => current = state;
+
+  @override
+  Future<void> clear() async {
+    clearCount++;
+    current = null;
+  }
 }

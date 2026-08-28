@@ -5,12 +5,14 @@
 import 'package:hive_ce/hive_ce.dart';
 import 'package:leitner_app/models/app_settings.dart';
 import 'package:leitner_app/models/flashcard.dart';
+import 'package:leitner_app/models/session_state.dart';
 import 'package:leitner_app/models/study_log.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(AppSettingsAdapter());
     registerAdapter(FlashcardAdapter());
+    registerAdapter(SessionStateAdapter());
     registerAdapter(StudyLogAdapter());
   }
 }
@@ -19,6 +21,7 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(AppSettingsAdapter());
     registerAdapter(FlashcardAdapter());
+    registerAdapter(SessionStateAdapter());
     registerAdapter(StudyLogAdapter());
   }
 }
