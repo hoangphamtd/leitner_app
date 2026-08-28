@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../utils/web_metrics/web_metrics.dart';
+
 /// Một lần chạm và độ trễ tới khung hình vẽ ngay sau đó.
 class TouchSample {
   /// Mili-giây kể từ lúc app khởi động, để biết chạm lúc nào.
@@ -12,15 +14,29 @@ class TouchSample {
   /// là mượt, trên 300 là thấy khựng, trên 1000 là tưởng hỏng.
   final int latencyMs;
 
-  /// Toạ độ chạm, giúp đối chiếu xem bấm trúng vùng nào.
+  /// Toạ độ chạm THEO FLUTTER, tức nơi Flutter tin là ngón tay vừa chạm.
   final int x;
   final int y;
+
+  /// Toạ độ chạm THEO TRÌNH DUYỆT cho cùng cú chạm đó. Null nếu không đo được.
+  ///
+  /// Hai bộ toạ độ này phải trùng nhau. Lệch nhau nghĩa là vùng vẽ và vùng nhận
+  /// chạm không cùng một hệ toạ độ — người dùng bấm trúng chỗ nhìn thấy nút mà
+  /// vẫn trượt, đúng bằng độ lệch. Không bài test widget nào bắt được chuyện
+  /// này vì nó xảy ra ở tầng trình duyệt, nên phải đo thẳng trên máy thật.
+  final int? thoX;
+  final int? thoY;
+
+  /// Độ lệch dọc giữa hai hệ toạ độ. Null nếu không đo được.
+  int? get lechDoc => thoY == null ? null : y - thoY!;
 
   const TouchSample({
     required this.atMs,
     required this.latencyMs,
     required this.x,
     required this.y,
+    this.thoX,
+    this.thoY,
   });
 }
 
@@ -79,6 +95,9 @@ class DiagnosticsService extends ChangeNotifier {
   /// số này phình lên.
   void recordTouch(double x, double y) {
     final atMs = _uptime.elapsedMilliseconds;
+    // Đọc ngay, không đợi tới khung hình sau: tới lúc đó có thể đã có cú chạm
+    // khác ghi đè.
+    final tho = const WebMetrics().chamThoCuoi;
     final sw = Stopwatch()..start();
     SchedulerBinding.instance.addPostFrameCallback((_) {
       sw.stop();
@@ -91,6 +110,8 @@ class DiagnosticsService extends ChangeNotifier {
           latencyMs: sw.elapsedMilliseconds,
           x: x.round(),
           y: y.round(),
+          thoX: tho?.x,
+          thoY: tho?.y,
         ),
       );
     });

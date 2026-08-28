@@ -58,6 +58,47 @@ worker cache được, app chạy offline thật.
 `objective_c` (iOS), hai gói đó dùng `dart:ffi` mà WasmGC không hỗ trợ. Trên web
 chúng không được nạp nên bản build JS chạy bình thường.
 
+## `web/index.html` — hai dòng làm hỏng cả app trên iPhone
+
+**Không khai báo `<meta name="viewport">`.** Engine Flutter **xoá sạch** mọi thẻ
+viewport có sẵn rồi tự đặt lại thẻ của nó — xem `_applyViewportMeta` trong
+`flutter/lib/ui/src/engine/view_embedder/embedding_strategy/full_page_embedding_strategy.dart`.
+Cảnh báo về việc này nằm trong `assert()` nên **bản phát hành hoàn toàn im lặng**.
+
+**`apple-mobile-web-app-status-bar-style` phải là `black`**, đúng như mẫu gốc.
+Không dùng `black-translucent`.
+
+Hai dòng đó cộng lại đã làm app **không dùng được trên iPhone** (28/08/2026):
+ở chế độ đã cài vào màn hình chính, vùng VẼ và vùng NHẬN CHẠM lệch nhau đúng
+bằng chiều cao thanh trạng thái (~47 điểm ảnh). Chạm đúng chỗ nhìn thấy nút thì
+trượt; chạm cao hơn 47 điểm mới trúng. Mọi nút, không riêng nút nào.
+
+Triệu chứng đánh lừa rất nặng, ghi lại để lần sau khỏi đi lại đường vòng:
+
+* Mở bằng Safari thì bình thường (lề an toàn khác nên độ lệch nhỏ hoặc bằng 0),
+  chỉ chế độ đã cài mới hỏng → dễ tưởng là lỗi hiệu năng của chế độ standalone.
+* Nhật ký chạm đo được **0–13 ms**, không lỗi nào → app trông rất mượt.
+  `Listener` ở gốc là `HitTestBehavior.translucent` nên nó **ghi nhận cú chạm kể
+  cả khi không nút nào nhận được**. Nhật ký đẹp KHÔNG chứng minh nút có ăn.
+* "Bấm mãi mới vào được Cài đặt" thực ra là bấm trượt vài lần rồi tình cờ trúng.
+
+`test/web_shell_test.dart` khoá lại cả hai dòng, cộng với máy đo trong
+index.html ghi toạ độ thô của trình duyệt. Màn hình Chẩn đoán hiện cột **"lệch"**
+— hiệu giữa toạ độ Flutter tính ra và toạ độ trình duyệt báo cho cùng cú chạm.
+**Phải bằng 0.** Đây là thứ duy nhất nhìn thấy được lỗi này trên máy thật, vì
+test widget chạy trên máy ảo Dart, không có trình duyệt nên không dựng lại được.
+
+## Dải báo cập nhật — đừng báo nhầm ở lần cài đầu
+
+`clients.claim()` trong `sw.js` cũng bắn ra `controllerchange` ngay lần cài đầu
+tiên. Không có bảo vệ thì người vừa cài xong đã thấy "Có bản cập nhật", bấm rồi
+lại hiện tiếp. Vì vậy `index.html` chụp `navigator.serviceWorker.controller`
+**trước khi đăng ký** (`coNguoiPhucVuTuDau`) và chỉ báo bản mới khi nó khác null.
+
+Ngoài ra màn hình **Cài đặt có nút "TẢI LẠI APP"** riêng, độc lập với dải — vì
+đã có lần chính nút TẢI LẠI trong dải hỏng, và người dùng kẹt cứng không còn
+đường nào ra.
+
 ## Service worker — TỰ VIẾT, đừng trông vào Flutter
 
 Từ Flutter 3.2x, service worker do `flutter build web` sinh ra **đã bị khai tử**:

@@ -442,8 +442,22 @@ class _PhienBanFooter extends StatelessWidget {
           Text(
             web.buildVersion == 'dev'
                 ? 'Bản chạy thử ở máy phát triển'
-                : 'Mở lại app để nhận bản mới nếu có',
+                : 'Bấm nút dưới đây để nạp lại bản mới nhất',
             style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          // Lối thoát KHÔNG phụ thuộc vào dải cập nhật.
+          //
+          // Đã xảy ra thật: dải báo có bản mới nhưng chính nút TẢI LẠI trong
+          // dải lại hỏng, thành ra người dùng kẹt cứng ở bản cũ mà không còn
+          // đường nào ra — app đã cài vào màn hình chính thì không có thanh
+          // địa chỉ, không có nút tải lại của trình duyệt. Nút này nằm ở màn
+          // hình Cài đặt, độc lập hoàn toàn với dải, để chuyện đó không lặp lại.
+          OutlinedButton.icon(
+            onPressed: web.applyUpdate,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            label: const Text('TẢI LẠI APP'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(180, 44)),
           ),
         ],
       ),

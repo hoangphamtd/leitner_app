@@ -11,7 +11,20 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!--
+    CỐ Ý KHÔNG khai báo <meta name="viewport"> ở đây.
+
+    Engine của Flutter XOÁ SẠCH mọi thẻ viewport có sẵn rồi tự đặt lại thẻ của
+    nó (xem `full_page_embedding_strategy.dart`, hàm `_applyViewportMeta`).
+    Cảnh báo về việc đó nằm trong `assert()` nên bản phát hành không hề in ra.
+
+    Hậu quả của việc cứ khai báo: trang được bố trí HAI LẦN với hai vùng an
+    toàn khác nhau — lần đầu theo thẻ của mình, lần sau theo thẻ của Flutter.
+    Trên iPhone ở chế độ đã cài vào màn hình chính, điều này làm vùng VẼ và
+    vùng NHẬN CHẠM lệch nhau đúng bằng chiều cao thanh trạng thái: người dùng
+    chạm đúng chỗ nhìn thấy nút thì trượt, phải chạm cao hơn ~47 điểm mới trúng.
+    Đã xảy ra thật (28/08/2026) và làm app không dùng được trên điện thoại.
+  -->
   <meta name="description" content="Học từ vựng tiếng Anh theo phương pháp Leitner 5 hộp. Chạy hoàn toàn trên máy bạn, học được khi không có mạng.">
 
   <!-- Màu thanh trạng thái, khớp với màu chủ đạo trong lib/app.dart -->
@@ -20,7 +33,13 @@
   <!-- Thẻ dành riêng cho iOS: Safari không đọc manifest.json cho phần này -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!--
+    Phải là `black`, đúng như mẫu gốc của Flutter. `black-translucent` cho web
+    view trườn lên dưới thanh trạng thái, nhưng nội dung vẫn được vẽ bên dưới
+    thanh đó — vùng vẽ và hệ toạ độ chạm không còn cùng gốc nữa. Đây là nửa còn
+    lại của lỗi lệch vùng chạm nói trên.
+  -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Leitner">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -126,6 +145,28 @@
       __ghiLoi('promise', e.reason && e.reason.message ? e.reason.message : e.reason, null);
     });
 
+    // Ghi lại toạ độ THÔ do trình duyệt báo, để đối chiếu với toạ độ mà Flutter
+    // tính ra cho cùng cú chạm đó.
+    //
+    // Lý do cần: lỗi lệch vùng chạm nằm ở tầng web, giữa nơi trình duyệt báo và
+    // nơi Flutter vẽ. Không bài test widget nào dựng lại được nó, vì test chạy
+    // trên máy ảo Dart, không có trình duyệt. Chỉ có cách đo thẳng trên máy
+    // người dùng rồi so hai con số. Hiệu số chính là độ lệch.
+    //
+    // Bắt ở pha CAPTURE trên window để lấy được trước khi Flutter xử lý, và
+    // `passive` để không cản thao tác.
+    window.__leitner.chamThoCuoi = null;
+    window.addEventListener('pointerdown', function (e) {
+      window.__leitner.chamThoCuoi = {
+        x: Math.round(e.clientX),
+        y: Math.round(e.clientY),
+        // Kích thước vùng nhìn thấy ngay lúc chạm, để biết trang có bị bố trí
+        // lại giữa chừng không.
+        rongCuaSo: window.innerWidth,
+        caoCuaSo: window.innerHeight
+      };
+    }, { capture: true, passive: true });
+
     // Flutter bắn sự kiện này khi vẽ xong khung hình đầu tiên.
     window.addEventListener('flutter-first-frame', function () {
       if (window.__leitner.khungDauTien_ms === null) {
@@ -176,6 +217,12 @@
     // Đăng ký sau sự kiện 'load' để việc nạp sẵn tài nguyên của service worker
     // không giành băng thông với lần tải đầu tiên của chính ứng dụng.
     if ('serviceWorker' in navigator) {
+      // Chụp lại NGAY BÂY GIỜ, trước khi đăng ký. `controller` khác null nghĩa
+      // là trang này đang được một service worker cũ phục vụ — tức đây không
+      // phải lần cài đầu. Phải chụp sớm vì việc đăng ký sẽ làm giá trị đó đổi.
+      var coNguoiPhucVuTuDau = !!navigator.serviceWorker.controller;
+      window.__leitner.coNguoiPhucVuTuDau = coNguoiPhucVuTuDau;
+
       window.addEventListener('load', function () {
         navigator.serviceWorker
           .register('sw.js', {
@@ -214,7 +261,14 @@
 
         // Service worker mới đã chiếm quyền điều khiển. Trang hiện tại vẫn đang
         // chạy mã cũ đã nạp từ trước, nên phải tải lại mới thấy bản mới.
+        //
+        // NHƯNG chỉ đúng khi trang này VỐN ĐÃ được một service worker phục vụ.
+        // Ở lần cài đầu tiên, `clients.claim()` trong sw.js cũng bắn đúng sự
+        // kiện này — mà lúc đó chẳng có bản nào mới hơn bản vừa tải về. Thiếu
+        // bảo vệ này thì người vừa cài xong đã thấy ngay "Có bản cập nhật",
+        // bấm TẢI LẠI lại hiện tiếp, không bao giờ dứt. Đã xảy ra thật.
         navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!coNguoiPhucVuTuDau) return;
           window.__leitner.coBanMoi = true;
           try {
             if (typeof window.__leitnerBaoCapNhat === 'function') {

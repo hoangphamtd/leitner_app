@@ -346,6 +346,18 @@ class _NhatKyCham extends StatelessWidget {
 
   const _NhatKyCham({required this.mau});
 
+  /// Độ lệch dọc lớn nhất trong các mẫu đo được. 0 nghĩa là không lệch.
+  ///
+  /// Đây là con số quan trọng nhất trên màn hình này khi nghi ngờ bấm trượt.
+  int _lechLonNhat(List<TouchSample> mau) {
+    var lon = 0;
+    for (final m in mau) {
+      final l = m.lechDoc;
+      if (l != null && l.abs() > lon.abs()) lon = l;
+    }
+    return lon;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -374,6 +386,25 @@ class _NhatKyCham extends StatelessWidget {
             'trên 1000 ms là tưởng nút hỏng.',
             style: TextStyle(fontSize: 13),
           ),
+          const SizedBox(height: 6),
+          const Text(
+            'Cột "lệch" là hiệu giữa toạ độ Flutter tính ra và toạ độ trình '
+            'duyệt báo cho CÙNG cú chạm. Phải bằng 0. Khác 0 nghĩa là bấm '
+            'trúng chỗ nhìn thấy nút vẫn trượt, đúng bằng chừng đó điểm ảnh.',
+            style: TextStyle(fontSize: 13),
+          ),
+          if (_lechLonNhat(mau) != 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'LỆCH VÙNG CHẠM: ${_lechLonNhat(mau)} điểm ảnh',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFB3261E),
+                ),
+              ),
+            ),
           const SizedBox(height: 10),
           if (mau.isEmpty)
             const Text(
@@ -395,10 +426,15 @@ class _NhatKyCham extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        '(${m.x}, ${m.y})',
+                        m.thoY == null
+                            ? '(${m.x}, ${m.y})'
+                            : '(${m.x}, ${m.y}) · duyệt (${m.thoX}, ${m.thoY})'
+                                  ' · lệch ${m.lechDoc}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: scheme.onSurfaceVariant,
+                          color: (m.lechDoc ?? 0) != 0
+                              ? const Color(0xFFB3261E)
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                     ),

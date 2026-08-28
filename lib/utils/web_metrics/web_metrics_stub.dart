@@ -1,3 +1,25 @@
+/// Toạ độ THÔ của cú chạm gần nhất, do chính trình duyệt báo.
+///
+/// Dùng để đối chiếu với toạ độ mà Flutter tính ra cho cùng cú chạm. Hai con số
+/// này phải bằng nhau; lệch nhau nghĩa là vùng vẽ và vùng nhận chạm không cùng
+/// một hệ toạ độ, và người dùng sẽ bấm trượt đúng bằng độ lệch đó.
+class ChamTho {
+  final int x;
+  final int y;
+
+  /// Kích thước vùng nhìn thấy ngay lúc chạm, để biết trang có bị bố trí lại
+  /// giữa chừng không.
+  final int rongCuaSo;
+  final int caoCuaSo;
+
+  const ChamTho({
+    required this.x,
+    required this.y,
+    required this.rongCuaSo,
+    required this.caoCuaSo,
+  });
+}
+
 /// Một lỗi JavaScript bắt được ở tầng trình duyệt.
 class JsError {
   /// Số mili-giây kể từ lúc mở trang.
@@ -24,6 +46,9 @@ class WebMetrics {
 
   /// Mili-giây đã trôi qua kể từ lúc mở trang.
   int get uptimeMs => 0;
+
+  /// Toạ độ thô của cú chạm gần nhất. Null khi không chạy trên trình duyệt.
+  ChamTho? get chamThoCuoi => null;
 
   List<JsError> get jsErrors => const [];
 

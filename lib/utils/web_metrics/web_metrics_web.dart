@@ -3,9 +3,9 @@ import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
-import 'web_metrics_stub.dart' show JsError;
+import 'web_metrics_stub.dart' show ChamTho, JsError;
 
-export 'web_metrics_stub.dart' show JsError;
+export 'web_metrics_stub.dart' show ChamTho, JsError;
 
 /// Đọc các số liệu mà `web/index.html` thu thập được ở tầng trình duyệt.
 ///
@@ -106,6 +106,19 @@ class WebMetrics {
   }
 
   /// Đã có bản mới tải xong, chỉ chờ tải lại trang để thay thế.
+  /// Toạ độ thô của cú chạm gần nhất, lấy từ máy đo trong `web/index.html`.
+  ChamTho? get chamThoCuoi {
+    final value = _kho?.getProperty<JSAny?>('chamThoCuoi'.toJS);
+    if (!value.isA<JSObject>()) return null;
+    final obj = value! as JSObject;
+    return ChamTho(
+      x: _soNguyen(obj, 'x'),
+      y: _soNguyen(obj, 'y'),
+      rongCuaSo: _soNguyen(obj, 'rongCuaSo'),
+      caoCuaSo: _soNguyen(obj, 'caoCuaSo'),
+    );
+  }
+
   bool get hasUpdate {
     final value = _kho?.getProperty<JSAny?>('coBanMoi'.toJS);
     return value.isA<JSBoolean>() && (value! as JSBoolean).toDart;

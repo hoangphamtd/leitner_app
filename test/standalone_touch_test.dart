@@ -531,6 +531,94 @@ void main() {
     });
   });
 
+  group('Quét toàn app: vùng VẼ và vùng NHẬN CHẠM phải trùng nhau', () {
+    /// Người dùng báo MỌI nút đều bấm trượt ở chế độ đã cài vào màn hình chính,
+    /// phải chạm cao hơn khoảng 47 điểm ảnh mới trúng.
+    ///
+    /// Nguyên nhân thật nằm ở tầng trình duyệt (hai thẻ meta trong
+    /// `web/index.html`, xem `test/web_shell_test.dart`), nên nhóm test này
+    /// KHÔNG dựng lại được nó — test chạy trên máy ảo Dart, không có trình
+    /// duyệt. Việc của nhóm này là loại trừ nửa còn lại: chứng minh chính tầng
+    /// Flutter không tự tạo ra độ lệch nào, ở cả hai lề an toàn.
+    ///
+    /// Cách làm: lấy ô VẼ của từng nút bằng `getRect`, rồi bắn hit-test vào
+    /// đúng tâm ô đó và đòi hỏi nút ấy phải nằm trong đường chạm.
+    const Size kMayThat = Size(393, 793);
+
+    Future<void> datMayThat(WidgetTester tester) async {
+      tester.view.physicalSize = kMayThat;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
+
+    /// Chạm vào đúng tâm ô vẽ của [nut] và đòi hỏi cú chạm tới được nó.
+    void doiCham(WidgetTester tester, Finder nut, String ten) {
+      final o = tester.getRect(nut);
+      final duong = tester.hitTestOnBinding(o.center).path;
+      final den = tester.renderObject(nut);
+      expect(
+        duong.any((e) => e.target == den),
+        isTrue,
+        reason:
+            'Chạm vào tâm ô vẽ của "$ten" ($o, tâm ${o.center}) không tới được '
+            'chính nó. Thứ nhận chạm: '
+            '${duong.take(5).map((e) => e.target.runtimeType).join(" < ")}',
+      );
+    }
+
+    for (final (tenLe, le) in [
+      ('Safari', kLeSafari),
+      ('standalone', kLeStandalone),
+    ]) {
+      testWidgets('Ba tab dưới — lề $tenLe', (tester) async {
+        await datMayThat(tester);
+        await tester.pumpWidget(dungApp(viewPadding: le));
+        await tester.pumpAndSettle();
+
+        for (final nhan in ['Tổng quan', 'Thư viện', 'Cài đặt']) {
+          doiCham(
+            tester,
+            find.descendant(
+              of: find.byType(NavigationBar),
+              matching: find.text(nhan),
+            ),
+            'tab $nhan',
+          );
+        }
+      });
+
+      testWidgets('Nút trên thanh tiêu đề và nút chính — lề $tenLe', (
+        tester,
+      ) async {
+        await datMayThat(tester);
+        await tester.pumpWidget(dungApp(viewPadding: le));
+        await tester.pumpAndSettle();
+
+        doiCham(tester, find.byTooltip('Chẩn đoán'), 'nút Chẩn đoán');
+
+        final nutChinh = find.textContaining('HỌC HÔM NAY');
+        if (nutChinh.evaluate().isNotEmpty) {
+          await tester.ensureVisible(nutChinh);
+          await tester.pumpAndSettle();
+          doiCham(tester, nutChinh, 'nút HỌC HÔM NAY');
+        }
+      });
+
+      testWidgets('Nút trong dải cập nhật — lề $tenLe', (tester) async {
+        await datMayThat(tester);
+        await tester.pumpWidget(dungApp(viewPadding: le, hienDaiCapNhat: true));
+        await tester.pumpAndSettle();
+
+        doiCham(
+          tester,
+          find.widgetWithText(FilledButton, 'TẢI LẠI'),
+          'nút TẢI LẠI',
+        );
+        doiCham(tester, find.byKey(UpdateBanner.nutDeSau), 'nút đóng dải');
+      });
+    }
+  });
+
   group('So sánh hai môi trường', () {
     testWidgets('Dải cập nhật KHÔNG được che mất tiêu đề màn hình', (
       tester,
