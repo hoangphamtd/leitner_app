@@ -90,12 +90,12 @@ class StudySession {
   List<StudyLog> get logs => List.unmodifiable(_logs);
 
   SessionStats get stats => SessionStats(
-        totalAnswers: _correctAnswers + _wrongAnswers,
-        correctAnswers: _correctAnswers,
-        wrongAnswers: _wrongAnswers,
-        cardsCompleted: _completedCardIds.length,
-        cardsLapsed: _failedCardIds.length,
-      );
+    totalAnswers: _correctAnswers + _wrongAnswers,
+    correctAnswers: _correctAnswers,
+    wrongAnswers: _wrongAnswers,
+    cardsCompleted: _completedCardIds.length,
+    cardsLapsed: _failedCardIds.length,
+  );
 
   /// Trả lời thẻ đang hiển thị.
   ///

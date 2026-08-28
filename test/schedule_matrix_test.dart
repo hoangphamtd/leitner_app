@@ -32,8 +32,10 @@ void main() {
   final service = LeitnerService(random: Random(1));
 
   /// Giãn cách thật khi thẻ lên [box] vào ngày [start].
-  int gapFrom(int box, DateTime start, String cardId) =>
-      service.calculateNextReviewDate(box, cardId, start).difference(start).inDays;
+  int gapFrom(int box, DateTime start, String cardId) => service
+      .calculateNextReviewDate(box, cardId, start)
+      .difference(start)
+      .inDays;
 
   group('Dải giãn cách thật, xuất phát từ mọi thứ trong tuần', () {
     test('In bảng và khoá lại các con số', () {
@@ -41,8 +43,10 @@ void main() {
       buffer.writeln();
       buffer.writeln('BẢNG GIÃN CÁCH THẬT (số ngày tới lần ôn kế tiếp)');
       buffer.writeln('=' * 78);
-      buffer.writeln('Lên hộp vào  | Hộp 1 | Hộp 2 | Hộp 3 | Hộp 4 chẵn '
-          '| Hộp 4 lẻ | Hộp 5*');
+      buffer.writeln(
+        'Lên hộp vào  | Hộp 1 | Hộp 2 | Hộp 3 | Hộp 4 chẵn '
+        '| Hộp 4 lẻ | Hộp 5*',
+      );
       buffer.writeln('-' * 78);
 
       // Gom lại để tính dải nhỏ nhất và lớn nhất của từng hộp.
@@ -81,15 +85,19 @@ void main() {
       }
 
       buffer.writeln('-' * 78);
-      buffer.writeln('* Hộp 5 phụ thuộc ngày trong THÁNG chứ không phải thứ '
-          'trong tuần, nên cột này');
+      buffer.writeln(
+        '* Hộp 5 phụ thuộc ngày trong THÁNG chứ không phải thứ '
+        'trong tuần, nên cột này',
+      );
       buffer.writeln('  chỉ đúng cho tháng 5/2025; xem bảng riêng bên dưới.');
       buffer.writeln();
 
       for (final entry in gaps.entries) {
         final values = entry.value;
-        buffer.writeln('${entry.key.padRight(10)} dải: '
-            '${values.reduce(min)} đến ${values.reduce(max)} ngày');
+        buffer.writeln(
+          '${entry.key.padRight(10)} dải: '
+          '${values.reduce(min)} đến ${values.reduce(max)} ngày',
+        );
       }
       stdout.write(buffer.toString());
 
@@ -119,12 +127,16 @@ void main() {
           monthGaps.add(gapFrom(5, DateTime(2025, month, day), evenId));
         }
         allGaps.addAll(monthGaps);
-        buffer.writeln('Tháng ${month.toString().padLeft(2)}: '
-            '${monthGaps.reduce(min)} đến ${monthGaps.reduce(max)} ngày');
+        buffer.writeln(
+          'Tháng ${month.toString().padLeft(2)}: '
+          '${monthGaps.reduce(min)} đến ${monthGaps.reduce(max)} ngày',
+        );
       }
       buffer.writeln('-' * 50);
-      buffer.writeln('Cả năm: ${allGaps.reduce(min)} đến '
-          '${allGaps.reduce(max)} ngày');
+      buffer.writeln(
+        'Cả năm: ${allGaps.reduce(min)} đến '
+        '${allGaps.reduce(max)} ngày',
+      );
       stdout.write(buffer.toString());
 
       expect(allGaps.reduce(min), 20);
@@ -152,13 +164,22 @@ void main() {
         final tuesday = mondayAnchor.add(Duration(days: 1 + week * 7));
         expect(tuesday.weekday, DateTime.tuesday);
 
-        expect(tuesday.add(const Duration(days: 12)).weekday, DateTime.sunday,
-            reason: 'Thứ Ba cộng 12 ngày luôn là Chủ Nhật');
+        expect(
+          tuesday.add(const Duration(days: 12)).weekday,
+          DateTime.sunday,
+          reason: 'Thứ Ba cộng 12 ngày luôn là Chủ Nhật',
+        );
 
-        expect(gapFrom(4, tuesday, evenId), 18,
-            reason: 'Nhóm chẵn phải chờ tới Thứ Bảy');
-        expect(gapFrom(4, tuesday, oddId), 12,
-            reason: 'Nhóm lẻ dừng ngay tại Chủ Nhật thứ 12');
+        expect(
+          gapFrom(4, tuesday, evenId),
+          18,
+          reason: 'Nhóm chẵn phải chờ tới Thứ Bảy',
+        );
+        expect(
+          gapFrom(4, tuesday, oddId),
+          12,
+          reason: 'Nhóm lẻ dừng ngay tại Chủ Nhật thứ 12',
+        );
       }
     });
 
@@ -167,8 +188,10 @@ void main() {
       buffer.writeln();
       buffer.writeln('CHUỖI GIÃN CÁCH THẬT KHI ÔN ĐÚNG HẠN');
       buffer.writeln('=' * 72);
-      buffer.writeln('Kích hoạt   | 1→2 | 2→3 | 3→4 chẵn | 3→4 lẻ '
-          '| 4→5 chẵn | 4→5 lẻ | Tới Hộp 5');
+      buffer.writeln(
+        'Kích hoạt   | 1→2 | 2→3 | 3→4 chẵn | 3→4 lẻ '
+        '| 4→5 chẵn | 4→5 lẻ | Tới Hộp 5',
+      );
       buffer.writeln('-' * 72);
 
       for (var offset = 0; offset < 7; offset++) {

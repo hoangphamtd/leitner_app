@@ -64,10 +64,10 @@ class AppSettings {
   }
 
   Map<String, dynamic> toJson() => {
-        'newCardsPerDay': newCardsPerDay,
-        'lastActivationDate': lastActivationDate?.toIso8601String(),
-        'activatedCountToday': activatedCountToday,
-      };
+    'newCardsPerDay': newCardsPerDay,
+    'lastActivationDate': lastActivationDate?.toIso8601String(),
+    'activatedCountToday': activatedCountToday,
+  };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     final rawDate = json['lastActivationDate'] as String?;

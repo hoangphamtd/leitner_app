@@ -1,122 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'hive_registrar.g.dart';
+import 'app.dart';
+import 'data/sample_vocabulary.dart';
+import 'providers/deck_provider.dart';
+import 'providers/study_provider.dart';
+import 'repositories/card_repository.dart';
+import 'repositories/hive_card_repository.dart';
+import 'repositories/hive_settings_repository.dart';
+import 'repositories/hive_study_log_repository.dart';
+import 'repositories/settings_repository.dart';
+import 'repositories/study_log_repository.dart';
+import 'services/leitner_service.dart';
+import 'services/vocabulary_importer.dart';
+import 'utils/logger.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+final Logger _log = const Logger('main');
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  // Trên web, Hive CE lưu xuống IndexedDB của trình duyệt. Không cần chỉ định
+  // thư mục, cũng không cần quyền gì — toàn bộ dữ liệu nằm trên máy người học.
+  await Hive.initFlutter();
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  // Phải đăng ký adapter TRƯỚC khi mở bất kỳ hộp nào, nếu không Hive sẽ không
+  // biết cách đọc lại các đối tượng đã lưu.
+  Hive.registerAdapters();
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  final CardRepository cardRepository = HiveCardRepository();
+  final StudyLogRepository logRepository = HiveStudyLogRepository();
+  final SettingsRepository settingsRepository = HiveSettingsRepository();
 
-  final String title;
+  await cardRepository.init();
+  await logRepository.init();
+  await settingsRepository.init();
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  await _seedSampleVocabularyIfEmpty(cardRepository);
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final leitner = LeitnerService();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => DeckProvider(
+            cardRepository: cardRepository,
+            logRepository: logRepository,
+            settingsRepository: settingsRepository,
+            leitner: leitner,
+          )..refresh(),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
+        ChangeNotifierProvider(
+          create: (_) => StudyProvider(
+            cardRepository: cardRepository,
+            logRepository: logRepository,
+            leitner: leitner,
+          ),
+        ),
+      ],
+      child: const LeitnerApp(),
+    ),
+  );
+}
+
+/// Mồi bộ từ vựng mẫu vào thư viện ở lần chạy đầu tiên.
+///
+/// Chỉ chạy khi kho thẻ hoàn toàn rỗng, để không bao giờ ghi đè lên dữ liệu học
+/// thật của người dùng. Thẻ nạp vào nằm im trong thư viện với `isActive = false`
+/// — người học phải chủ động kích hoạt thì mới vào vòng học.
+Future<void> _seedSampleVocabularyIfEmpty(CardRepository repository) async {
+  final existing = await repository.getAll();
+  if (existing.isNotEmpty) return;
+
+  final result = VocabularyImporter().importFromMaps(
+    sampleVocabulary,
+    existing,
+  );
+  if (result.errors.isNotEmpty) {
+    // Dữ liệu mẫu là hằng số trong mã nguồn nên lỗi ở đây nghĩa là lập trình
+    // viên soạn sai, phải thấy ngay chứ không được bỏ qua.
+    _log.error('Bộ từ vựng mẫu có mục hỏng: ${result.errors.join("; ")}');
   }
+  await repository.saveAll(result.newCards);
+  _log.info('Đã mồi ${result.importedCount} từ vựng mẫu vào thư viện');
 }

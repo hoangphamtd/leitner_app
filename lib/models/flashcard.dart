@@ -127,21 +127,21 @@ class Flashcard {
 
   /// Chuyển sang JSON để xuất sao lưu và để nạp bộ từ vựng từ file.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'word': word,
-        'phonetic': phonetic,
-        'meaning': meaning,
-        'exampleSentence': exampleSentence,
-        'imagePath': imagePath,
-        'audioPath': audioPath,
-        'boxNumber': boxNumber,
-        'nextReviewDate': nextReviewDate.toIso8601String(),
-        'isActive': isActive,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-        'reviewCount': reviewCount,
-        'lapseCount': lapseCount,
-      };
+    'id': id,
+    'word': word,
+    'phonetic': phonetic,
+    'meaning': meaning,
+    'exampleSentence': exampleSentence,
+    'imagePath': imagePath,
+    'audioPath': audioPath,
+    'boxNumber': boxNumber,
+    'nextReviewDate': nextReviewDate.toIso8601String(),
+    'isActive': isActive,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'reviewCount': reviewCount,
+    'lapseCount': lapseCount,
+  };
 
   /// Dựng thẻ từ JSON.
   ///

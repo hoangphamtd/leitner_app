@@ -15,7 +15,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'cuộc hẹn, lịch hẹn',
     'exampleSentence':
         'I had to reschedule my dental appointment because an urgent meeting '
-            'came up at work that same afternoon.',
+        'came up at work that same afternoon.',
     'imagePath': null,
   },
   {
@@ -24,7 +24,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'hàng tạp hoá, thực phẩm',
     'exampleSentence':
         'She stopped by the grocery store on her way home to pick up some milk, '
-            'eggs and a loaf of bread for breakfast.',
+        'eggs and a loaf of bread for breakfast.',
     'imagePath': null,
   },
   {
@@ -33,7 +33,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'đi lại giữa nhà và nơi làm việc',
     'exampleSentence':
         'His daily commute takes almost an hour each way, so he usually listens '
-            'to podcasts to make the time pass faster.',
+        'to podcasts to make the time pass faster.',
     'imagePath': null,
   },
   {
@@ -42,7 +42,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'mượn',
     'exampleSentence':
         'Can I borrow your umbrella for the afternoon? I forgot mine at home and '
-            'the sky looks like it is about to rain.',
+        'the sky looks like it is about to rain.',
     'imagePath': null,
   },
   {
@@ -51,7 +51,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'hàng xóm',
     'exampleSentence':
         'Our new neighbour brought over a plate of homemade cookies the day '
-            'after she moved into the apartment next door.',
+        'after she moved into the apartment next door.',
     'imagePath': null,
   },
   {
@@ -60,7 +60,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'hoá đơn, biên lai',
     'exampleSentence':
         'Please keep the receipt in case you want to return the shirt, because '
-            'the shop will not accept it without proof of purchase.',
+        'the shop will not accept it without proof of purchase.',
     'imagePath': null,
   },
   {
@@ -69,7 +69,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'lịch trình, thời gian biểu',
     'exampleSentence':
         'My schedule is completely full until Thursday, but I could meet you for '
-            'coffee on Friday morning if that works for you.',
+        'coffee on Friday morning if that works for you.',
     'imagePath': null,
   },
   {
@@ -78,7 +78,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'đủ tiền để mua, kham nổi',
     'exampleSentence':
         'We cannot really afford a new car this year, so we decided to repair the '
-            'old one and save the money instead.',
+        'old one and save the money instead.',
     'imagePath': null,
   },
   {
@@ -87,7 +87,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'phàn nàn, khiếu nại',
     'exampleSentence':
         'Several guests complained about the noise from the construction site, so '
-            'the hotel offered them a discount on their rooms.',
+        'the hotel offered them a discount on their rooms.',
     'imagePath': null,
   },
   {
@@ -96,7 +96,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'cải thiện, tiến bộ',
     'exampleSentence':
         'Her pronunciation has improved a lot since she started practising with a '
-            'recording of herself every single evening.',
+        'recording of herself every single evening.',
     'imagePath': null,
   },
   {
@@ -105,7 +105,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'có sẵn, rảnh',
     'exampleSentence':
         'The doctor is not available this morning, but there is an open slot at '
-            'four o clock tomorrow afternoon if you can come then.',
+        'four o clock tomorrow afternoon if you can come then.',
     'imagePath': null,
   },
   {
@@ -114,7 +114,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'hạn chót',
     'exampleSentence':
         'The deadline for submitting the report is Friday at noon, so I plan to '
-            'finish the last section tonight and review it in the morning.',
+        'finish the last section tonight and review it in the morning.',
     'imagePath': null,
   },
   {
@@ -123,7 +123,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'hoàn tiền',
     'exampleSentence':
         'After the flight was cancelled, the airline promised a full refund, but '
-            'the money only appeared in my account three weeks later.',
+        'the money only appeared in my account three weeks later.',
     'imagePath': null,
   },
   {
@@ -132,7 +132,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'giới thiệu, khuyên dùng',
     'exampleSentence':
         'A colleague recommended this little restaurant near the station, and the '
-            'noodles there turned out to be even better than I expected.',
+        'noodles there turned out to be even better than I expected.',
     'imagePath': null,
   },
   {
@@ -141,7 +141,7 @@ const List<Map<String, dynamic>> sampleVocabulary = [
     'meaning': 'thời tiết',
     'exampleSentence':
         'The weather has been unusually cold this week, so remember to bring a '
-            'jacket if you are going out early in the morning.',
+        'jacket if you are going out early in the morning.',
     'imagePath': null,
   },
 ];

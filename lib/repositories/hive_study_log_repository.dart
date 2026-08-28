@@ -51,8 +51,10 @@ class HiveStudyLogRepository implements StudyLogRepository {
   Future<List<StudyLog>> getInRange(DateTime from, DateTime to) async {
     // Lấy trọn hai đầu mút để phía gọi không phải cộng trừ mili giây.
     return _requireBox.values
-        .where((log) =>
-            !log.answeredAt.isBefore(from) && !log.answeredAt.isAfter(to))
+        .where(
+          (log) =>
+              !log.answeredAt.isBefore(from) && !log.answeredAt.isAfter(to),
+        )
         .toList();
   }
 

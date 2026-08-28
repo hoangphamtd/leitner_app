@@ -100,10 +100,7 @@ class LeitnerService {
   /// Bảng lịch của cả 5 hộp, đúng theo mục 3.1.
   static final Map<int, BoxSchedule> schedules = {
     // Hộp 1 — ôn mỗi ngày, cách tối thiểu 1 ngày.
-    1: BoxSchedule(
-      minimumGapDays: 1,
-      matches: (date, cardId) => true,
-    ),
+    1: BoxSchedule(minimumGapDays: 1, matches: (date, cardId) => true),
     // Hộp 2 — Thứ Hai, Thứ Tư, Thứ Sáu.
     2: BoxSchedule(
       minimumGapDays: 2,
@@ -358,7 +355,8 @@ class LeitnerService {
 
     // Bộ đếm chỉ cộng dồn khi vẫn còn trong cùng ngày; sang ngày mới thì đếm
     // lại từ số vừa kích hoạt.
-    final isSameDayAsCounter = settings.lastActivationDate != null &&
+    final isSameDayAsCounter =
+        settings.lastActivationDate != null &&
         du.DateUtils.isSameDay(settings.lastActivationDate!, today);
     final updatedSettings = settings.copyWith(
       lastActivationDate: today,

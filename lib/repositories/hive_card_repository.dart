@@ -51,8 +51,7 @@ class HiveCardRepository implements CardRepository {
     // hết ngày đang xét — thẻ quá hạn từ hôm trước cũng phải được gom vào.
     final cutoff = du.DateUtils.endOfDay(day);
     return _requireBox.values
-        .where((card) =>
-            card.isActive && !card.nextReviewDate.isAfter(cutoff))
+        .where((card) => card.isActive && !card.nextReviewDate.isAfter(cutoff))
         .toList();
   }
 

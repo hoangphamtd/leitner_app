@@ -44,22 +44,22 @@ class StudyLog {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'cardId': cardId,
-        'answeredAt': answeredAt.toIso8601String(),
-        'isCorrect': isCorrect,
-        'boxBefore': boxBefore,
-        'boxAfter': boxAfter,
-      };
+    'id': id,
+    'cardId': cardId,
+    'answeredAt': answeredAt.toIso8601String(),
+    'isCorrect': isCorrect,
+    'boxBefore': boxBefore,
+    'boxAfter': boxAfter,
+  };
 
   factory StudyLog.fromJson(Map<String, dynamic> json) => StudyLog(
-        id: json['id'] as String,
-        cardId: json['cardId'] as String,
-        answeredAt: DateTime.parse(json['answeredAt'] as String),
-        isCorrect: json['isCorrect'] as bool,
-        boxBefore: json['boxBefore'] as int,
-        boxAfter: json['boxAfter'] as int,
-      );
+    id: json['id'] as String,
+    cardId: json['cardId'] as String,
+    answeredAt: DateTime.parse(json['answeredAt'] as String),
+    isCorrect: json['isCorrect'] as bool,
+    boxBefore: json['boxBefore'] as int,
+    boxAfter: json['boxAfter'] as int,
+  );
 
   @override
   String toString() =>

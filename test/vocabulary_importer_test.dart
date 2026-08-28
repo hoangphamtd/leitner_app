@@ -25,12 +25,19 @@ void main() {
       final result = importer.importFromMaps(sampleVocabulary, const []);
 
       for (final card in result.newCards) {
-        expect(card.isActive, isFalse,
-            reason: 'Từ mới nạp phải chờ người học chủ động kích hoạt');
+        expect(
+          card.isActive,
+          isFalse,
+          reason: 'Từ mới nạp phải chờ người học chủ động kích hoạt',
+        );
         expect(card.boxNumber, 1);
         expect(card.id, isNotEmpty);
         expect(card.reviewCount, 0);
-        expect(card.audioPath, isNull, reason: 'Giai đoạn này chưa có file mp3');
+        expect(
+          card.audioPath,
+          isNull,
+          reason: 'Giai đoạn này chưa có file mp3',
+        );
       }
     });
 
@@ -84,20 +91,27 @@ void main() {
 
       final result = importer.importFromMaps(entries, const []);
 
-      expect(result.importedCount, 2,
-          reason: 'Một từ hỏng không được chặn cả bộ từ vựng');
+      expect(
+        result.importedCount,
+        2,
+        reason: 'Một từ hỏng không được chặn cả bộ từ vựng',
+      );
       expect(result.errors.length, 1);
       expect(result.errors.first, contains('Mục thứ 2'));
     });
 
     test('Chuỗi JSON không hợp lệ thì ném FormatException', () {
-      expect(() => importer.importFromJsonString('{khong-phai-json', const []),
-          throwsFormatException);
+      expect(
+        () => importer.importFromJsonString('{khong-phai-json', const []),
+        throwsFormatException,
+      );
     });
 
     test('JSON hợp lệ nhưng không phải mảng thì ném FormatException', () {
-      expect(() => importer.importFromJsonString('{"word":"x"}', const []),
-          throwsFormatException);
+      expect(
+        () => importer.importFromJsonString('{"word":"x"}', const []),
+        throwsFormatException,
+      );
     });
 
     test('Nạp được từ chuỗi JSON thô', () {
@@ -132,13 +146,21 @@ void main() {
         final word = entry['word'] as String;
         final sentence = (entry['exampleSentence'] as String).toLowerCase();
 
-        expect(sentence.length, greaterThan(60),
-            reason: 'Câu ví dụ của "$word" quá ngắn');
+        expect(
+          sentence.length,
+          greaterThan(60),
+          reason: 'Câu ví dụ của "$word" quá ngắn',
+        );
         // So theo gốc từ để bắt được cả dạng chia đuôi, ví dụ
         // "recommend" xuất hiện trong câu dưới dạng "recommended".
-        final stem = word.length > 5 ? word.substring(0, word.length - 1) : word;
-        expect(sentence.contains(stem.toLowerCase()), isTrue,
-            reason: 'Câu ví dụ của "$word" không chứa chính từ đó');
+        final stem = word.length > 5
+            ? word.substring(0, word.length - 1)
+            : word;
+        expect(
+          sentence.contains(stem.toLowerCase()),
+          isTrue,
+          reason: 'Câu ví dụ của "$word" không chứa chính từ đó',
+        );
       }
     });
 
