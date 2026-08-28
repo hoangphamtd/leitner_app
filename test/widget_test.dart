@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leitner_app/models/flashcard.dart';
+import 'package:leitner_app/providers/backup_provider.dart';
 import 'package:leitner_app/providers/deck_provider.dart';
+import 'package:leitner_app/providers/library_provider.dart';
+import 'package:leitner_app/providers/settings_provider.dart';
 import 'package:leitner_app/providers/study_provider.dart';
 import 'package:leitner_app/screens/home_screen.dart';
 import 'package:leitner_app/screens/study_screen.dart';
@@ -9,6 +12,7 @@ import 'package:leitner_app/services/leitner_service.dart';
 import 'package:leitner_app/widgets/box_tile.dart';
 import 'package:provider/provider.dart';
 
+import 'fakes/fake_pronunciation.dart';
 import 'fakes/fake_repositories.dart';
 
 /// Dựng một thẻ để kiểm thử giao diện.
@@ -59,6 +63,23 @@ Widget wrapWithProviders({
               sessionStateRepository: sessions,
               leitner: leitner,
             ),
+      ),
+      ChangeNotifierProvider<BackupProvider>.value(
+        value: BackupProvider(
+          cardRepository: cards,
+          logRepository: logs,
+          settingsRepository: settings,
+          sessionStateRepository: sessions,
+        ),
+      ),
+      ChangeNotifierProvider<SettingsProvider>.value(
+        value: SettingsProvider(
+          repository: settings,
+          pronunciation: FakePronunciation(),
+        ),
+      ),
+      ChangeNotifierProvider<LibraryProvider>.value(
+        value: LibraryProvider(cardRepository: cards),
       ),
       ChangeNotifierProvider<StudyProvider>.value(
         value:

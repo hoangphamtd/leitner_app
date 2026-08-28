@@ -32,14 +32,23 @@ class LibraryScreen extends StatelessWidget {
               )
             : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.select_all_rounded),
-            tooltip: 'Chọn tất cả đang hiện',
-            onPressed: library.visibleCards.isEmpty
-                ? null
-                : () =>
-                      context.read<LibraryProvider>().toggleSelectAllVisible(),
-          ),
+          // Chỉ hiện khi đã có thẻ được chọn: lúc chưa chọn gì thì nút này chỉ
+          // làm rối thanh tiêu đề, mà người dùng cũng chưa có ý định thao tác
+          // hàng loạt.
+          if (library.hasSelection)
+            TextButton.icon(
+              onPressed: () =>
+                  context.read<LibraryProvider>().toggleSelectAllVisible(),
+              icon: Icon(
+                library.allVisibleSelected
+                    ? Icons.deselect_rounded
+                    : Icons.select_all_rounded,
+                size: 20,
+              ),
+              label: Text(
+                library.allVisibleSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả',
+              ),
+            ),
         ],
       ),
       body: SafeArea(
@@ -229,51 +238,76 @@ class _CardRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final library = context.read<LibraryProvider>();
 
+    // Hai vùng chạm tách bạch, theo đúng thông lệ trên điện thoại:
+    //   * ô đánh dấu bên trái   -> chọn hoặc bỏ chọn
+    //   * phần còn lại của dòng -> mở thẻ ra xem và sửa
+    // Cách cũ (chạm cả dòng để chọn, giữ lâu mới sửa) khiến người dùng chạm vào
+    // một từ muốn xem lại thì vô tình chọn nó.
     return Material(
       color: selected ? scheme.primaryContainer : scheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        // Chạm để chọn hoặc bỏ chọn, giữ lâu để mở form sửa. Cách này giữ thao
-        // tác chọn nhiều luôn sẵn sàng mà không cần một nút bật chế độ riêng.
-        onTap: () => library.toggleSelection(card.id),
-        onLongPress: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => CardFormScreen(card: card))),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+      child: Row(
+        children: [
+          // Vùng chạm của ô đánh dấu được nới rộng ra xung quanh để ngón tay
+          // không phải nhắm đúng cái ô nhỏ.
+          InkWell(
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(14),
+            ),
+            onTap: () => library.toggleSelection(card.id),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+              child: Icon(
+                selected
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
                 color: selected ? scheme.primary : scheme.outline,
+                semanticLabel: selected
+                    ? 'Bỏ chọn ${card.word}'
+                    : 'Chọn ${card.word}',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(14),
+              ),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => CardFormScreen(card: card)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 10, 12, 10),
+                child: Row(
                   children: [
-                    Text(
-                      card.word,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            card.word,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            card.meaning,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: scheme.onSurfaceVariant),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      card.meaning,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
+                    const SizedBox(width: 8),
+                    _StatusBadge(card: card),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              _StatusBadge(card: card),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

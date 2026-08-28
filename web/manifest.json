@@ -1,23 +1,29 @@
 {
-    "name": "leitner_app",
-    "short_name": "leitner_app",
+    "name": "Leitner — Học từ vựng tiếng Anh",
+    "short_name": "Leitner",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
+    "background_color": "#F5FAF7",
+    "theme_color": "#2E6F5E",
+    "lang": "vi",
+    "dir": "ltr",
+    "description": "Học từ vựng tiếng Anh theo phương pháp Leitner 5 hộp. Chạy hoàn toàn trên máy bạn, không cần tài khoản, học được khi không có mạng.",
+    "categories": ["education"],
     "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-maskable-192.png",

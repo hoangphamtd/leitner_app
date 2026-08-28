@@ -104,6 +104,13 @@ class SettingsProvider extends ChangeNotifier {
     await _persist(_settings.copyWith(themeMode: mode));
   }
 
+  /// Ghi nhận người dùng đã bỏ qua lời mời cài app vào màn hình chính.
+  Future<void> markInstallPromptDismissed({DateTime? now}) async {
+    await _persist(
+      _settings.copyWith(installPromptDismissedAt: now ?? DateTime.now()),
+    );
+  }
+
   /// Đọc thử một từ để người dùng nghe trước khi chốt giọng.
   Future<void> preview(Flashcard sample) => pronunciation.speakWord(sample);
 

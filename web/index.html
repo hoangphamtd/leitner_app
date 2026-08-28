@@ -1,46 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    Đường dẫn gốc khi phục vụ app. `flutter build web` sẽ thay chỗ này bằng giá
+    trị của tham số --base-href. Đặt app ở thư mục con thì phải truyền tham số
+    đó, nếu không service worker sẽ đăng ký nhầm phạm vi và app không chạy
+    offline được.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Học từ vựng tiếng Anh theo phương pháp Leitner 5 hộp. Chạy hoàn toàn trên máy bạn, học được khi không có mạng.">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Màu thanh trạng thái, khớp với màu chủ đạo trong lib/app.dart -->
+  <meta name="theme-color" content="#2E6F5E">
+
+  <!-- Thẻ dành riêng cho iOS: Safari không đọc manifest.json cho phần này -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="leitner_app">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Leitner">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>leitner_app</title>
+  <title>Leitner — Học từ vựng</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Nền của trang trước khi Flutter vẽ xong, để không loé trắng rồi mới đổi
+       màu. Hai giá trị khớp với background_color trong manifest và với bảng màu
+       tối của ứng dụng. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #F5FAF7;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body { background-color: #101512; }
+    }
+    /* Màn hình chờ trong lúc tải gói ứng dụng lần đầu. */
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #2E6F5E;
+      font-size: 15px;
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="loading">Đang tải…</div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Gỡ màn hình chờ khi Flutter đã dựng xong khung hình đầu tiên.
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('loading');
+      if (el) el.remove();
+    });
+
+    // Đăng ký service worker riêng. Phải tự làm ở đây vì Flutter đã bỏ service
+    // worker của nó — xem chú thích đầu file web/sw.js.
+    //
+    // Đăng ký sau sự kiện 'load' để việc nạp sẵn tài nguyên của service worker
+    // không giành băng thông với lần tải đầu tiên của chính ứng dụng.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (error) {
+          console.warn('Không đăng ký được service worker:', error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

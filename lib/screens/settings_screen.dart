@@ -3,15 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../models/app_settings.dart';
 import '../models/flashcard.dart';
+import '../providers/backup_provider.dart';
 import '../providers/deck_provider.dart';
+import '../providers/library_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/pronunciation_service.dart';
 import '../widgets/content_width_limit.dart';
 
 /// Màn hình Cài đặt.
-///
-/// Phần xuất và nhập tiến độ ra file JSON thuộc Phần 6 của SOP, sẽ được làm ở
-/// giai đoạn đóng gói PWA cùng với cơ chế sao lưu — nên chưa có ở đây.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -48,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     _ThemeSection(settings: settings),
                     const SizedBox(height: 24),
-                    const _BackupPlaceholder(),
+                    const _BackupSection(),
                   ],
                 ),
               ),
@@ -250,22 +249,43 @@ class _ThemeSection extends StatelessWidget {
   }
 }
 
-/// Chỗ dành sẵn cho phần sao lưu ở giai đoạn sau.
-class _BackupPlaceholder extends StatelessWidget {
-  const _BackupPlaceholder();
+/// Xuất và nhập tiến độ ra file JSON (Phần 6 của SOP).
+class _BackupSection extends StatefulWidget {
+  const _BackupSection();
+
+  @override
+  State<_BackupSection> createState() => _BackupSectionState();
+}
+
+class _BackupSectionState extends State<_BackupSection> {
+  DateTime? _lastBackupAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastBackup();
+  }
+
+  Future<void> _loadLastBackup() async {
+    final settings = await context.read<BackupProvider>().currentSettings();
+    if (!mounted) return;
+    setState(() => _lastBackupAt = settings.lastBackupAt);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final backup = context.watch<BackupProvider>();
+
     return _Section(
       title: 'Sao lưu tiến độ',
-      description:
-          'Xuất và nhập file JSON sẽ có ở giai đoạn đóng gói PWA, '
-          'cùng với phần nhắc sao lưu định kỳ.',
+      description: _lastBackupAt == null
+          ? 'Chưa sao lưu lần nào. Dữ liệu chỉ nằm trong trình duyệt máy này.'
+          : 'Lần sao lưu gần nhất: ${_formatDate(_lastBackupAt!)}.',
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: null,
+              onPressed: backup.isBusy ? null : _export,
               icon: const Icon(Icons.upload_file),
               label: const Text('XUẤT'),
             ),
@@ -273,7 +293,7 @@ class _BackupPlaceholder extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: null,
+              onPressed: backup.isBusy ? null : _import,
               icon: const Icon(Icons.download),
               label: const Text('NHẬP'),
             ),
@@ -281,5 +301,92 @@ class _BackupPlaceholder extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime moment) {
+    final d = moment.day.toString().padLeft(2, '0');
+    final m = moment.month.toString().padLeft(2, '0');
+    return '$d/$m/${moment.year}';
+  }
+
+  Future<void> _export() async {
+    final backup = context.read<BackupProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final fileName = await backup.exportToFile();
+      await _loadLastBackup();
+      messenger.showSnackBar(SnackBar(content: Text('Đã tải xuống $fileName')));
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Không xuất được. $error')),
+      );
+    }
+  }
+
+  Future<void> _import() async {
+    final backup = context.read<BackupProvider>();
+    final deck = context.read<DeckProvider>();
+    final library = context.read<LibraryProvider>();
+    final settings = context.read<SettingsProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final picked = await backup.pickAndPreview();
+      // Người dùng đóng hộp thoại mà không chọn file.
+      if (picked == null || !mounted) return;
+
+      // Hỏi xác nhận vì đây là thao tác GHI ĐÈ, không hoàn tác được. Nói rõ số
+      // liệu của file để người dùng nhận ra ngay nếu lỡ chọn nhầm bản cũ.
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Ghi đè toàn bộ dữ liệu?'),
+          content: Text(
+            'File chứa ${picked.preview.cardCount} thẻ và '
+            '${picked.preview.logCount} dòng nhật ký'
+            '${picked.preview.exportedAt == null ? '' : ', xuất ngày ${_formatDate(picked.preview.exportedAt!)}'}.\n\n'
+            'Toàn bộ dữ liệu hiện có trên máy này sẽ bị XOÁ và thay bằng nội '
+            'dung file. Thao tác này không hoàn tác được.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('HUỶ'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                minimumSize: const Size(120, 44),
+              ),
+              child: const Text('GHI ĐÈ'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      final outcome = await backup.applyImport(picked.rawJson);
+
+      // Mọi provider đang giữ dữ liệu cũ đều phải đọc lại từ kho.
+      await deck.refresh();
+      await library.refresh();
+      await settings.load();
+      await _loadLastBackup();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã khôi phục ${outcome.cardCount} thẻ và '
+            '${outcome.logCount} dòng nhật ký.',
+          ),
+        ),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Không nhập được. $error')),
+      );
+    }
   }
 }

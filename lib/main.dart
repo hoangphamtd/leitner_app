@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'hive_registrar.g.dart';
 import 'app.dart';
 import 'data/sample_vocabulary.dart';
+import 'providers/backup_provider.dart';
 import 'providers/deck_provider.dart';
 import 'providers/library_provider.dart';
 import 'providers/settings_provider.dart';
@@ -74,6 +75,14 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) =>
               LibraryProvider(cardRepository: cardRepository)..refresh(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => BackupProvider(
+            cardRepository: cardRepository,
+            logRepository: logRepository,
+            settingsRepository: settingsRepository,
+            sessionStateRepository: sessionStateRepository,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(

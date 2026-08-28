@@ -26,13 +26,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       themeMode: fields[6] == null
           ? AppThemeMode.system
           : fields[6] as AppThemeMode,
+      lastBackupAt: fields[7] as DateTime?,
+      installPromptDismissedAt: fields[8] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.newCardsPerDay)
       ..writeByte(1)
@@ -46,7 +48,11 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(5)
       ..write(obj.ttsRate)
       ..writeByte(6)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(7)
+      ..write(obj.lastBackupAt)
+      ..writeByte(8)
+      ..write(obj.installPromptDismissedAt);
   }
 
   @override

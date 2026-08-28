@@ -40,14 +40,43 @@ ghim `analyzer` 6.x (chỉ hiểu Dart 3.4) nên không parse nổi cú pháp Da
 `Expected an identifier` ngay trên `main.dart` mặc định, chưa cần code của mình.
 `hive_ce` kéo `analyzer` 14.x nên chạy sạch. API `@HiveType` / `@HiveField` giữ nguyên.
 
-## Lệnh build web — KHÔNG dùng `--wasm`
+## Lệnh build web — BẮT BUỘC `--no-web-resources-cdn`, KHÔNG dùng `--wasm`
 
-Dự án luôn build bằng **`flutter build web`** thường. **Không dùng `--wasm`.**
+Lệnh build đúng của dự án:
 
-`flutter build web` sẽ in cảnh báo `Wasm dry run failed`. **Bỏ qua cảnh báo này.**
-Nguyên nhân đã truy rõ: `flutter_tts` kéo theo `jni` (Android) và `objective_c` (iOS),
-hai gói đó dùng `dart:ffi` mà WasmGC không hỗ trợ. Trên web chúng không được nạp
-nên bản build JS chạy bình thường.
+```bash
+flutter build web --no-web-resources-cdn
+```
+
+**`--no-web-resources-cdn` là bắt buộc.** Không có cờ này, Flutter tải CanvasKit và
+font Roboto từ `gstatic.com`, tức là app phụ thuộc mạng ở lần chạy đầu và service
+worker không cache được (khác miền). Có cờ này thì CanvasKit nằm cùng miền, service
+worker cache được, app chạy offline thật.
+
+**Không dùng `--wasm`.** `flutter build web` sẽ in cảnh báo `Wasm dry run failed` —
+**bỏ qua**. Nguyên nhân đã truy rõ: `flutter_tts` kéo theo `jni` (Android) và
+`objective_c` (iOS), hai gói đó dùng `dart:ffi` mà WasmGC không hỗ trợ. Trên web
+chúng không được nạp nên bản build JS chạy bình thường.
+
+## Service worker — TỰ VIẾT, đừng trông vào Flutter
+
+Từ Flutter 3.2x, service worker do `flutter build web` sinh ra **đã bị khai tử**:
+`flutter_service_worker.js` không cache gì cả, nó chỉ tự gỡ đăng ký chính mình.
+Đã kiểm chứng thực tế (27/08/2026): với cấu hình mặc định, tắt máy chủ rồi tải lại
+trang thì trình duyệt báo **trang lỗi** — 0 service worker, 0 mục cache.
+
+Dự án vì vậy có hai file tự viết, **đừng xoá**:
+
+* `web/sw.js` — service worker thật: nạp sẵn phần lõi lúc cài, còn lại cache theo
+  runtime; yêu cầu điều hướng luôn trả về `index.html` từ cache.
+* `web/flutter_bootstrap.js` — bản khởi động tuỳ biến, cố ý gọi `_flutter.loader.load()`
+  **không tham số** để Flutter không đăng ký service worker của nó (nếu đăng ký, nó
+  chiếm mất phạm vi rồi gỡ luôn `sw.js`).
+
+`web/index.html` tự đăng ký `sw.js` sau sự kiện `load`.
+
+Đổi nội dung `sw.js` thì phải tăng `CACHE_NAME` (`leitner-v1` → `v2`…), nếu không
+máy người dùng vẫn dùng bản cache cũ.
 
 ## Định nghĩa "đã thuộc"
 

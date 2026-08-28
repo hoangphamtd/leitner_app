@@ -47,6 +47,16 @@ class LibraryProvider extends ChangeNotifier {
 
   bool get hasSelection => _selectedIds.isNotEmpty;
 
+  /// Toàn bộ thẻ đang hiển thị đều đã được chọn hay chưa.
+  ///
+  /// Nút trên thanh tiêu đề dựa vào đây để đổi giữa "Chọn tất cả" và "Bỏ chọn
+  /// tất cả", thay vì bắt người dùng đoán xem bấm vào sẽ ra kết quả nào.
+  bool get allVisibleSelected {
+    final visible = visibleCards;
+    if (visible.isEmpty) return false;
+    return visible.every((card) => _selectedIds.contains(card.id));
+  }
+
   int get totalCount => _allCards.length;
 
   /// Danh sách thẻ sau khi áp dụng tìm kiếm và các bộ lọc.

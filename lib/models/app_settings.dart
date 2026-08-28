@@ -68,6 +68,22 @@ class AppSettings {
   @HiveField(6)
   final AppThemeMode themeMode;
 
+  /// Lần xuất sao lưu gần nhất. Null nghĩa là chưa xuất lần nào.
+  ///
+  /// Toàn bộ dữ liệu học nằm trong IndexedDB của trình duyệt, mà trình duyệt có
+  /// quyền dọn kho đó bất cứ lúc nào — nhất là khi máy hết dung lượng hoặc người
+  /// dùng xoá dữ liệu duyệt web. Vì vậy mốc này được dùng để nhắc sao lưu định
+  /// kỳ ở màn hình Tổng quan.
+  @HiveField(7)
+  final DateTime? lastBackupAt;
+
+  /// Lần gần nhất người dùng bỏ qua lời mời cài app vào màn hình chính.
+  ///
+  /// Null nghĩa là chưa từng bỏ qua. Dùng để nhắc lại sau ba ngày thay vì hỏi
+  /// lại mỗi lần mở app.
+  @HiveField(8)
+  final DateTime? installPromptDismissedAt;
+
   const AppSettings({
     this.newCardsPerDay = 20,
     this.lastActivationDate,
@@ -76,6 +92,8 @@ class AppSettings {
     this.ttsVoiceLocale,
     this.ttsRate = 0.45,
     this.themeMode = AppThemeMode.system,
+    this.lastBackupAt,
+    this.installPromptDismissedAt,
   });
 
   /// Số suất kích hoạt còn lại trong ngày [day].
@@ -106,6 +124,8 @@ class AppSettings {
     bool clearTtsVoice = false,
     double? ttsRate,
     AppThemeMode? themeMode,
+    DateTime? lastBackupAt,
+    DateTime? installPromptDismissedAt,
   }) {
     return AppSettings(
       newCardsPerDay: newCardsPerDay ?? this.newCardsPerDay,
@@ -117,6 +137,9 @@ class AppSettings {
           : (ttsVoiceLocale ?? this.ttsVoiceLocale),
       ttsRate: ttsRate ?? this.ttsRate,
       themeMode: themeMode ?? this.themeMode,
+      lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+      installPromptDismissedAt:
+          installPromptDismissedAt ?? this.installPromptDismissedAt,
     );
   }
 
@@ -128,11 +151,15 @@ class AppSettings {
     'ttsVoiceLocale': ttsVoiceLocale,
     'ttsRate': ttsRate,
     'themeMode': themeMode.name,
+    'lastBackupAt': lastBackupAt?.toIso8601String(),
+    'installPromptDismissedAt': installPromptDismissedAt?.toIso8601String(),
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     final rawDate = json['lastActivationDate'] as String?;
     final rawTheme = json['themeMode'] as String?;
+    final rawBackup = json['lastBackupAt'] as String?;
+    final rawDismissed = json['installPromptDismissedAt'] as String?;
     return AppSettings(
       newCardsPerDay: json['newCardsPerDay'] as int? ?? 20,
       lastActivationDate: rawDate == null ? null : DateTime.parse(rawDate),
@@ -146,6 +173,10 @@ class AppSettings {
         (mode) => mode.name == rawTheme,
         orElse: () => AppThemeMode.system,
       ),
+      lastBackupAt: rawBackup == null ? null : DateTime.parse(rawBackup),
+      installPromptDismissedAt: rawDismissed == null
+          ? null
+          : DateTime.parse(rawDismissed),
     );
   }
 }

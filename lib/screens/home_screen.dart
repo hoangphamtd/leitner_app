@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/session_state.dart';
+import '../providers/backup_provider.dart';
 import '../providers/deck_provider.dart';
+import '../providers/settings_provider.dart';
 import '../providers/study_provider.dart';
+import '../utils/platform_info/platform_info.dart';
 import '../widgets/box_tile.dart';
 import '../widgets/content_width_limit.dart';
+import '../widgets/install_guide_sheet.dart';
 import 'study_screen.dart';
 
 /// Màn hình Tổng quan — điểm vào của ứng dụng.
@@ -25,6 +29,66 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Không có cờ này thì mỗi lần provider báo có thay đổi, hộp thoại lại bật
   /// lên — kể cả ngay sau khi người học vừa trả lời xong.
   bool _askedAboutResume = false;
+
+  /// Đã chạy các bước kiểm tra lúc mở app (mời cài, nhắc sao lưu) hay chưa.
+  bool _ranStartupChecks = false;
+
+  /// Có nên hiện dải nhắc sao lưu ở đầu màn hình không.
+  bool _showBackupReminder = false;
+
+  /// Số ngày kể từ lần bỏ qua lời mời cài, trước khi được phép mời lại.
+  static const int _installPromptCooldownDays = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runStartupChecks());
+  }
+
+  /// Các việc chỉ làm một lần lúc mở app.
+  ///
+  /// Chạy sau khung hình đầu tiên để không dựng route giữa lúc đang build, và
+  /// chạy tuần tự để lời mời cài không chồng lên hộp thoại buổi học dở.
+  Future<void> _runStartupChecks() async {
+    if (_ranStartupChecks || !mounted) return;
+    _ranStartupChecks = true;
+
+    final backup = context.read<BackupProvider>();
+    final needsReminder = await backup.shouldRemindBackup();
+    if (!mounted) return;
+    if (needsReminder) setState(() => _showBackupReminder = true);
+
+    await _maybeOfferInstall();
+  }
+
+  /// Mời cài app vào màn hình chính, nếu đúng lúc.
+  ///
+  /// Chỉ mời khi hội đủ: đang mở bằng trình duyệt di động, chưa cài, và lần bỏ
+  /// qua gần nhất đã quá [_installPromptCooldownDays] ngày.
+  Future<void> _maybeOfferInstall() async {
+    const info = PlatformInfo();
+    if (!info.isMobileBrowser || info.isInstalled) return;
+
+    final settingsProvider = context.read<SettingsProvider>();
+    final dismissedAt = settingsProvider.settings.installPromptDismissedAt;
+    if (dismissedAt != null) {
+      final days = DateTime.now().difference(dismissedAt).inDays;
+      if (days < _installPromptCooldownDays) return;
+    }
+
+    // Nhường chỗ cho hộp thoại buổi học dở nếu nó đang mở.
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+
+    final dismissed = await InstallGuideSheet.show(
+      context,
+      info.mobilePlatform,
+    );
+    if (dismissed == null) return;
+
+    // Ghi mốc cho cả hai lựa chọn: người bấm "Đã hiểu" mà chưa cài ngay thì
+    // cũng không nên bị hỏi lại vào ngày mai.
+    await settingsProvider.markInstallPromptDismissed();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +114,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: CircularProgressIndicator(),
           ),
           DeckStatus.error => _ErrorView(message: deck.errorMessage),
-          DeckStatus.ready => _ReadyView(deck: deck),
+          DeckStatus.ready => _ReadyView(
+            deck: deck,
+            showBackupReminder: _showBackupReminder,
+            onDismissBackupReminder: () =>
+                setState(() => _showBackupReminder = false),
+          ),
         },
       ),
     );
@@ -164,8 +233,14 @@ class _ErrorView extends StatelessWidget {
 
 class _ReadyView extends StatelessWidget {
   final DeckProvider deck;
+  final bool showBackupReminder;
+  final VoidCallback onDismissBackupReminder;
 
-  const _ReadyView({required this.deck});
+  const _ReadyView({
+    required this.deck,
+    required this.showBackupReminder,
+    required this.onDismissBackupReminder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +250,10 @@ class _ReadyView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
+            if (showBackupReminder) ...[
+              _BackupReminder(onDismiss: onDismissBackupReminder),
+              const SizedBox(height: 16),
+            ],
             _BoxGrid(deck: deck),
             const SizedBox(height: 28),
             _StudyButton(deck: deck),
@@ -381,5 +460,65 @@ class _LibrarySection extends StatelessWidget {
         SnackBar(content: Text('Không thêm được từ mới. $error')),
       );
     }
+  }
+}
+
+/// Dải nhắc sao lưu, hiện ở đầu màn hình Tổng quan.
+///
+/// Cố ý nhẹ nhàng chứ không phải hộp thoại chặn đường: đây là lời nhắc, không
+/// phải sự cố. Nhưng vẫn cho đóng được, vì người vừa sao lưu xong bằng cách khác
+/// mà cứ bị nhắc mãi thì sẽ quen tay bỏ qua mọi cảnh báo.
+class _BackupReminder extends StatelessWidget {
+  final VoidCallback onDismiss;
+
+  const _BackupReminder({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.backup_outlined, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đã lâu chưa sao lưu',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onTertiaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Vào Cài đặt để xuất tiến độ ra file, phòng khi trình duyệt '
+                  'dọn mất dữ liệu.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onTertiaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close, size: 20),
+            tooltip: 'Đóng lời nhắc',
+            color: scheme.onTertiaryContainer,
+          ),
+        ],
+      ),
+    );
   }
 }
