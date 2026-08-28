@@ -34,12 +34,19 @@ Chấm xanh là xong, chấm vàng là đang chạy, chấm đỏ là hỏng.
 
 ### Người dùng có thấy bản mới ngay không?
 
-Không ngay lập tức. App đã cài trên máy người dùng chạy bằng bản đã lưu sẵn
-(service worker). Bản mới được nạp về ở lần mở kế tiếp, và **hiện ra ở lần mở
-sau nữa**. Nói cách khác, người dùng thường thấy bản mới sau khi mở app hai lần.
+Có. App tự kiểm tra bản mới mỗi lần mở. Khi phát hiện, một dải hiện lên đỉnh
+màn hình: **"Có bản cập nhật — TẢI LẠI"**. Bấm là xong.
 
-Muốn họ thấy ngay: bảo họ đóng hẳn app rồi mở lại hai lần, hoặc tăng số phiên
-bản `CACHE_NAME` trong `web/sw.js` (xem mục 5).
+Muốn biết máy đang chạy bản nào: **Cài đặt**, kéo xuống cuối, có dòng
+*"Leitner — bản 963f81b-20260828.0720"* (mã commit và giờ build).
+
+> **Đã từng hỏng chuyện này.** Bản service worker đầu tiên khiến người dùng kẹt
+> cứng ở bản cũ qua nhiều lần triển khai mà không hay biết. Hai nguyên nhân cộng
+> hưởng: `CACHE_NAME` là hằng số nên `sw.js` không đổi nội dung giữa các bản
+> build, trình duyệt coi service worker y hệt nên không cài lại; và mọi tài
+> nguyên đều lấy cache trước, trong khi `main.dart.js` chứa toàn bộ mã ứng dụng
+> lại có tên cố định. Cách chữa nằm ở bước "Đóng dấu mã build" trong workflow và
+> ở chiến lược lấy mạng trước cho nhóm khung ứng dụng — **đừng gỡ hai thứ đó**.
 
 ---
 
@@ -142,16 +149,14 @@ Không có tham số này, app tải bộ vẽ đồ hoạ và phông chữ từ
 đó app **vẫn chạy bình thường lúc có mạng** nên rất dễ tưởng là ổn — nhưng người
 dùng mở lần đầu lúc mất mạng sẽ hỏng.
 
-### c) Sửa `web/sw.js` thì phải tăng số phiên bản
+### c) Đừng bỏ bước "Đóng dấu mã build" trong workflow
 
-Trong `web/sw.js` có dòng:
+Bước này thay chuỗi `__BUILD_VERSION__` trong `sw.js` và `index.html` bằng mã
+commit thật. Nhờ đó nội dung `sw.js` khác nhau sau mỗi lần build, trình duyệt
+mới chịu cài service worker mới và dọn cache cũ.
 
-```js
-const CACHE_NAME = 'leitner-v1';
-```
-
-Sửa nội dung file này thì đổi thành `leitner-v2`, lần sau nữa là `v3`… Không đổi
-thì máy người dùng vẫn chạy bản cũ đã lưu.
+Bỏ bước này thì **người dùng kẹt vĩnh viễn ở bản cũ** — đã xảy ra thật. Workflow
+có sẵn phần tự kiểm: còn sót chuỗi thay thế là nó dừng luôn, không đẩy lên.
 
 **Đừng xoá `web/sw.js` và `web/flutter_bootstrap.js`.** Hai file này do dự án tự
 viết, không phải Flutter sinh ra. Từ Flutter 3.2x, service worker mặc định của

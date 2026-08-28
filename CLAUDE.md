@@ -75,8 +75,26 @@ Dự án vì vậy có hai file tự viết, **đừng xoá**:
 
 `web/index.html` tự đăng ký `sw.js` sau sự kiện `load`.
 
-Đổi nội dung `sw.js` thì phải tăng `CACHE_NAME` (`leitner-v1` → `v2`…), nếu không
-máy người dùng vẫn dùng bản cache cũ.
+### Cơ chế cập nhật — đừng phá hai thứ này
+
+Bản `sw.js` đầu tiên khiến người dùng **kẹt cứng ở bản cũ** qua nhiều lần triển
+khai. Hai nguyên nhân cộng hưởng: `CACHE_NAME` là hằng số nên `sw.js` không đổi
+nội dung giữa các bản build (trình duyệt coi service worker y hệt, không cài
+lại, `activate` không chạy, cache cũ không bị dọn); và mọi tài nguyên đều lấy
+cache trước, trong khi `main.dart.js` chứa toàn bộ mã ứng dụng lại có tên cố
+định không kèm mã băm.
+
+Hai thứ giữ cho cơ chế cập nhật sống, **tuyệt đối không gỡ**:
+
+1. Bước **"Đóng dấu mã build"** trong `.github/workflows/deploy.yml` — thay
+   `__BUILD_VERSION__` bằng mã commit, khiến `sw.js` đổi nội dung mỗi lần build.
+2. Nhóm **khung ứng dụng lấy MẠNG TRƯỚC** trong `sw.js` (`index.html`,
+   `main.dart.js`, `flutter_bootstrap.js`, `manifest.json`).
+
+Kèm theo: đăng ký service worker với `updateViaCache: 'none'`, gọi `update()` mỗi
+lần mở app, và dải "Có bản cập nhật — TẢI LẠI" ở `lib/widgets/update_banner.dart`.
+
+Mã phiên bản hiện ở cuối màn hình Cài đặt để luôn biết máy đang chạy bản nào.
 
 ## Định nghĩa "đã thuộc"
 
