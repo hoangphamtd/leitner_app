@@ -1,0 +1,84 @@
+# Tự động build và đưa app lên GitHub Pages mỗi khi đẩy mã lên nhánh main.
+name: Đưa lên GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Cho phép bấm chạy tay từ tab Actions, dùng khi cần build lại mà không sửa mã.
+  workflow_dispatch:
+
+# Quyền tối thiểu để đẩy lên Pages. GITHUB_TOKEN chỉ được cấp đúng những quyền
+# này, không hơn.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Chỉ cho một lượt triển khai chạy tại một thời điểm. Đẩy hai lần liên tiếp thì
+# lượt sau chờ lượt trước xong, để không có hai bản cùng ghi đè lên nhau.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # PHẢI khớp với phiên bản đang dùng ở máy phát triển. Để "stable" thì
+          # một bản Flutter mới ra là bản build trên máy chủ khác hẳn máy mình,
+          # lỗi xảy ra sẽ rất khó truy.
+          flutter-version: '3.47.1'
+          channel: stable
+          cache: true
+
+      - name: Tải các gói phụ thuộc
+        run: flutter pub get
+
+      - name: Sinh mã cho Hive
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Soát tĩnh
+        run: flutter analyze
+
+      - name: Chạy kiểm thử
+        run: flutter test
+
+      # Hai tham số dưới đây đều BẮT BUỘC, thiếu cái nào cũng hỏng:
+      #
+      #   --no-web-resources-cdn : không có thì CanvasKit và font Roboto tải từ
+      #     gstatic.com, service worker không cache được (khác miền) nên app
+      #     không chạy offline thật.
+      #
+      #   --base-href /leitner_app/ : GitHub Pages đặt app trong thư mục con
+      #     theo tên kho. Thiếu tham số này thì mọi đường dẫn trỏ về gốc tên
+      #     miền và app ra TRANG TRẮNG.
+      #     Đổi tên kho thì phải sửa lại đúng tên mới ở đây.
+      - name: Build web
+        run: flutter build web --no-web-resources-cdn --base-href /leitner_app/
+
+      - name: Chuẩn bị trang cho Pages
+        uses: actions/configure-pages@v5
+
+      - name: Đóng gói thư mục build
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    name: Triển khai
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Đưa lên GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
