@@ -98,6 +98,15 @@
         // Chỉ giữ 30 lỗi gần nhất qua các phiên, đủ để lần ngược mà không phình.
         window.localStorage.setItem(__KHOA_LOI, JSON.stringify(cu.slice(-30)));
       } catch (e) { /* hết chỗ lưu thì thôi, không được để việc ghi lỗi gây lỗi */ }
+
+      // Báo NGAY cho ứng dụng thay vì để nó hỏi lại theo nhịp.
+      //
+      // Trước đây dải báo lỗi cứ hai giây lại hỏi một lần. Cách đó vừa phí vừa
+      // khiến ứng dụng không bao giờ thật sự rảnh: cứ đúng nhịp là luồng chính
+      // lại bị đánh thức. Đẩy tin sang thì chỉ chạy đúng lúc có việc.
+      try {
+        if (typeof window.__leitnerBaoLoi === 'function') window.__leitnerBaoLoi();
+      } catch (e) {}
     }
 
     /// Lỗi của những phiên trước, đọc lại từ kho.
@@ -190,6 +199,11 @@
                 // lần cài đầu tiên. Chỉ khi đó mới cần mời người dùng tải lại.
                 if (moi.state === 'installed' && navigator.serviceWorker.controller) {
                   window.__leitner.coBanMoi = true;
+                  try {
+                    if (typeof window.__leitnerBaoCapNhat === 'function') {
+                      window.__leitnerBaoCapNhat();
+                    }
+                  } catch (e) {}
                 }
               });
             });
@@ -202,6 +216,11 @@
         // chạy mã cũ đã nạp từ trước, nên phải tải lại mới thấy bản mới.
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           window.__leitner.coBanMoi = true;
+          try {
+            if (typeof window.__leitnerBaoCapNhat === 'function') {
+              window.__leitnerBaoCapNhat();
+            }
+          } catch (e) {}
         });
       });
     }

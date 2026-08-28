@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,23 +16,19 @@ import '../utils/web_metrics/web_metrics.dart';
 class ErrorBanner extends StatefulWidget {
   final Widget child;
 
-  const ErrorBanner({super.key, required this.child});
+  /// Ép dải hiện ra với số lỗi cho trước, chỉ dùng cho kiểm thử.
+  @visibleForTesting
+  final int? forceErrorCount;
+
+  const ErrorBanner({super.key, required this.child, this.forceErrorCount});
 
   @override
   State<ErrorBanner> createState() => _ErrorBannerState();
 }
 
-class _ErrorBannerState extends State<ErrorBanner> {
+class _ErrorBannerState extends State<ErrorBanner> with WidgetsBindingObserver {
   static const WebMetrics _web = WebMetrics();
 
-  /// Nhịp hỏi lại xem có lỗi mới không.
-  ///
-  /// Lỗi JavaScript được ghi bên phía trình duyệt nên Dart không được báo, phải
-  /// hỏi theo nhịp. Hai giây đủ nhanh để người dùng thấy ngay khi vừa bấm phải
-  /// chỗ hỏng.
-  static const Duration _nhip = Duration(seconds: 2);
-
-  Timer? _timer;
   int _soLoi = 0;
   bool _moRong = false;
   bool _daDong = false;
@@ -42,8 +36,19 @@ class _ErrorBannerState extends State<ErrorBanner> {
   @override
   void initState() {
     super.initState();
+    // Được BÁO khi có lỗi mới, thay vì cứ hai giây lại hỏi một lần. Lỗi Dart
+    // thì nghe thẳng từ bộ thu thập, lỗi JavaScript thì phía trình duyệt gọi
+    // ngược sang. Cách này chỉ chạy đúng lúc có việc.
+    WidgetsBinding.instance.addObserver(this);
     _demLai();
-    _timer = Timer.periodic(_nhip, (_) => _demLai());
+    _web.onJsError(_demLai);
+    DiagnosticsService.instance.addListener(_demLai);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Lỗi có thể đã được ghi trong lúc app nằm ở nền.
+    if (state == AppLifecycleState.resumed) _demLai();
   }
 
   void _demLai() {
@@ -57,7 +62,8 @@ class _ErrorBannerState extends State<ErrorBanner> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    DiagnosticsService.instance.removeListener(_demLai);
     super.dispose();
   }
 
@@ -98,81 +104,86 @@ class _ErrorBannerState extends State<ErrorBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (_soLoi == 0 || _daDong) return widget.child;
+    final soLoi = widget.forceErrorCount ?? _soLoi;
+    if (soLoi == 0 || _daDong) return widget.child;
 
-    return Stack(
+    // Xếp dải NẰM TRÊN nội dung theo chiều dọc, không đè lên nó — cùng lý do
+    // như dải cập nhật: đè lên thì che mất thanh tiêu đề và nút trên đó.
+    return Column(
       children: [
-        widget.child,
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Material(
-            color: Colors.transparent,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB3261E),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () => setState(() => _moRong = !_moRong),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '$_soLoi lỗi — chạm để xem',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+        Material(
+          color: Colors.transparent,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB3261E),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _moRong = !_moRong),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '$soLoi lỗi — chạm để xem',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              Icon(
-                                _moRong ? Icons.expand_less : Icons.expand_more,
-                                color: Colors.white,
-                              ),
-                              IconButton(
-                                onPressed: () => setState(() => _daDong = true),
-                                icon: const Icon(Icons.close, size: 18),
-                                color: Colors.white,
-                                tooltip: 'Ẩn dải này',
-                              ),
-                            ],
-                          ),
+                            ),
+                            Icon(
+                              _moRong ? Icons.expand_less : Icons.expand_more,
+                              color: Colors.white,
+                            ),
+                            IconButton(
+                              onPressed: () => setState(() => _daDong = true),
+                              icon: const Icon(Icons.close, size: 18),
+                              color: Colors.white,
+                              tooltip: 'Ẩn dải này',
+                            ),
+                          ],
                         ),
                       ),
-                      if (_moRong)
-                        _ChiTietLoi(
-                          noiDung: _gomThanhChu(),
-                          onCopy: _chep,
-                          onXoa: _xoa,
-                        ),
-                    ],
-                  ),
+                    ),
+                    if (_moRong)
+                      _ChiTietLoi(
+                        noiDung: _gomThanhChu(),
+                        onCopy: _chep,
+                        onXoa: _xoa,
+                      ),
+                  ],
                 ),
               ),
             ),
+          ),
+        ),
+        // Gỡ lề an toàn phía trên khỏi phần còn lại, vì dải đã chiếm chỗ đó.
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: widget.child,
           ),
         ),
       ],

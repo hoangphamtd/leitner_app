@@ -96,6 +96,40 @@ lần mở app, và dải "Có bản cập nhật — TẢI LẠI" ở `lib/widg
 
 Mã phiên bản hiện ở cuối màn hình Cài đặt để luôn biết máy đang chạy bản nào.
 
+## Cây widget trên Navigator — phải tự cấp Overlay
+
+Phần bọc trong `MaterialApp.builder` nằm **TRÊN** Navigator, mà `Overlay` lại do
+chính Navigator tạo ra. Vì vậy mọi widget cần Overlay đặt ở đó — `Tooltip`,
+`PopupMenuButton`, `DropdownButton` — sẽ ném:
+
+```
+No Overlay widget found.
+RawTooltip widgets require an Overlay widget ancestor
+```
+
+Đã xảy ra thật (28/08/2026): hai dải thông báo bọc ngoài cùng đều có `IconButton`
+kèm `tooltip`, nên **mỗi lần dải hiện là một lần ném lỗi khi dựng**.
+
+Cách chữa: bọc bằng `Overlay.wrap(child: ...)` của chính Flutter. **Đừng gỡ bỏ
+`tooltip` cho hết lỗi** — đó là vá triệu chứng, lần sau ai thêm widget cần Overlay
+vào đây lại vấp đúng bẫy cũ. Cũng đừng tự viết lớp bọc Overlay: bản tự viết dễ
+quên gọi `remove()` trước `dispose()` và sẽ nổ assert lúc gỡ cây.
+
+## Dải thông báo — xếp dọc, đừng đè lên
+
+Hai dải (`update_banner`, `error_banner`) từng dùng `Stack` + `Positioned(top: 0)`
+để khỏi làm giao diện nhảy. Cái giá quá đắt: dải **phủ kín thanh tiêu đề**, mất
+chữ "Leitner" và mất luôn nút Chẩn đoán bên cạnh. Nay dùng `Column` + `Expanded`,
+kèm `MediaQuery.removePadding(removeTop: true)` cho phần dưới để không chừa lề an
+toàn hai lần.
+
+## Kiểm tra cập nhật — theo sự kiện, không theo nhịp
+
+Không dùng `Timer.periodic` ở gốc cây widget. Hỏi lại mỗi 2–3 giây là đánh thức
+luồng chính vô ích suốt phiên. Ba thời điểm đủ dùng: lúc mở app, khi phía trình
+duyệt gọi sang (`__leitnerBaoCapNhat` / `__leitnerBaoLoi` trong `web/index.html`),
+và khi app quay lại từ nền (`WidgetsBindingObserver.didChangeAppLifecycleState`).
+
 ## Định nghĩa "đã thuộc"
 
 Thẻ **đang ở Hộp 5** thì tính là đã thuộc. Không có điều kiện nào thêm.

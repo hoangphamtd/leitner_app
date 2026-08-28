@@ -144,6 +144,20 @@ class WebMetrics {
     if (fn.isA<JSFunction>()) (fn! as JSFunction).callAsFunction();
   }
 
+  /// Đăng ký hàm được gọi mỗi khi phía trình duyệt ghi thêm một lỗi.
+  ///
+  /// Dùng cách BÁO SANG thay vì hỏi lại theo nhịp. Hỏi theo nhịp thì cứ đúng
+  /// chu kỳ là đánh thức luồng chính dù chẳng có việc gì — trên máy yếu, chỗ
+  /// lãng phí đó cộng dồn thành giật.
+  void onJsError(void Function() callback) {
+    web.window.setProperty('__leitnerBaoLoi'.toJS, callback.toJS);
+  }
+
+  /// Đăng ký hàm được gọi khi phát hiện có bản cập nhật.
+  void onUpdateAvailable(void Function() callback) {
+    web.window.setProperty('__leitnerBaoCapNhat'.toJS, callback.toJS);
+  }
+
   int _soNguyen(JSObject obj, String key) {
     final value = obj.getProperty<JSAny?>(key.toJS);
     return value.isA<JSNumber>() ? (value! as JSNumber).toDartInt : 0;

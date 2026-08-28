@@ -65,4 +65,10 @@ class WebMetrics {
 
   /// Xoá nhật ký lỗi sau khi người dùng đã xem.
   void clearErrors() {}
+
+  /// Đăng ký hàm được gọi mỗi khi phía trình duyệt ghi thêm một lỗi.
+  void onJsError(void Function() callback) {}
+
+  /// Đăng ký hàm được gọi khi phát hiện có bản cập nhật.
+  void onUpdateAvailable(void Function() callback) {}
 }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../utils/web_metrics/web_metrics.dart';
@@ -13,115 +11,141 @@ import '../utils/web_metrics/web_metrics.dart';
 class UpdateBanner extends StatefulWidget {
   final Widget child;
 
-  const UpdateBanner({super.key, required this.child});
+  /// Ép dải hiện ra, chỉ dùng cho kiểm thử.
+  ///
+  /// Trạng thái thật nằm bên phía trình duyệt nên trên máy ảo Dart dải không
+  /// bao giờ hiện — mà đúng cái dải này lại đang bị nghi chặn thao tác chạm,
+  /// nên phải dựng được nó trong test mới kiểm chứng được.
+  @visibleForTesting
+  final bool? forceVisible;
+
+  const UpdateBanner({super.key, required this.child, this.forceVisible});
 
   @override
   State<UpdateBanner> createState() => _UpdateBannerState();
 }
 
-class _UpdateBannerState extends State<UpdateBanner> {
+class _UpdateBannerState extends State<UpdateBanner>
+    with WidgetsBindingObserver {
   static const WebMetrics _web = WebMetrics();
 
-  /// Nhịp hỏi lại xem đã có bản mới chưa.
-  ///
-  /// Cờ báo nằm bên JavaScript và được bật bất đồng bộ khi service worker cài
-  /// xong, nên phải hỏi lại theo nhịp. Ba giây là đủ nhanh để người dùng thấy
-  /// ngay trong phiên đang mở, mà cũng đủ thưa để không tốn gì đáng kể.
-  static const Duration _nhipKiemTra = Duration(seconds: 3);
-
-  Timer? _timer;
   bool _coBanMoi = false;
   bool _daBoQua = false;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(_nhipKiemTra, (_) {
-      if (!mounted || _daBoQua) return;
-      final moi = _web.hasUpdate;
-      if (moi != _coBanMoi) setState(() => _coBanMoi = moi);
-    });
+    // Kiểm tra đúng ba thời điểm có nghĩa, thay cho việc hỏi lại mỗi ba giây:
+    //   * lúc mở app,
+    //   * khi phía trình duyệt báo sang có bản mới,
+    //   * khi app quay lại từ nền (người dùng để đó rồi mở lại sau vài ngày).
+    // Hỏi theo nhịp là lãng phí thấy rõ: cứ đúng chu kỳ lại đánh thức luồng
+    // chính dù chẳng có việc gì.
+    WidgetsBinding.instance.addObserver(this);
+    _kiemTra();
+    _web.onUpdateAvailable(_kiemTra);
+  }
+
+  void _kiemTra() {
+    if (!mounted || _daBoQua) return;
+    final moi = _web.hasUpdate;
+    if (moi != _coBanMoi) setState(() => _coBanMoi = moi);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _kiemTra();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_coBanMoi || _daBoQua) return widget.child;
+    final hien = widget.forceVisible ?? _coBanMoi;
+    if (!hien || _daBoQua) return widget.child;
 
     final scheme = Theme.of(context).colorScheme;
 
-    return Stack(
+    // Xếp dải NẰM TRÊN nội dung theo chiều dọc, không đè lên nó.
+    //
+    // Bản trước đặt đè bằng Stack/Positioned để tránh giao diện nhảy. Cái giá
+    // phải trả quá đắt: dải phủ kín thanh tiêu đề, tiêu đề "Leitner" biến mất
+    // và nút Chẩn đoán ngay cạnh cũng không bấm được nữa. Người dùng đã báo
+    // đúng triệu chứng này. Một lần dịch xuống khi có bản cập nhật thì chấp
+    // nhận được, còn che mất nút thì không.
+    return Column(
       children: [
-        widget.child,
-        // Đặt đè lên trên thay vì chen vào bố cục, để không đẩy toàn bộ giao
-        // diện tụt xuống rồi lại nhảy lên khi người dùng đóng dải.
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Material(
-            color: Colors.transparent,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                  decoration: BoxDecoration(
-                    color: scheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.18),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.system_update_rounded,
-                        color: scheme.onTertiaryContainer,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Có bản cập nhật',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: scheme.onTertiaryContainer,
-                          ),
+        Material(
+          color: Colors.transparent,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                decoration: BoxDecoration(
+                  color: scheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.system_update_rounded,
+                      color: scheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Có bản cập nhật',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onTertiaryContainer,
                         ),
                       ),
-                      FilledButton(
-                        onPressed: _web.applyUpdate,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(90, 40),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
+                    ),
+                    FilledButton(
+                      onPressed: _web.applyUpdate,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(90, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
-                        child: const Text('TẢI LẠI'),
                       ),
-                      IconButton(
-                        onPressed: () => setState(() => _daBoQua = true),
-                        icon: const Icon(Icons.close, size: 20),
-                        tooltip: 'Để sau',
-                        color: scheme.onTertiaryContainer,
-                      ),
-                    ],
-                  ),
+                      child: const Text('TẢI LẠI'),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _daBoQua = true),
+                      icon: const Icon(Icons.close, size: 20),
+                      tooltip: 'Để sau',
+                      color: scheme.onTertiaryContainer,
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+        ),
+        // Dải đã chiếm phần lề an toàn phía trên rồi, nên phải gỡ lề đó khỏi
+        // MediaQuery của phần còn lại — không thì màn hình con chừa thêm một
+        // lần nữa và thừa ra một khoảng trống.
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: widget.child,
           ),
         ),
       ],

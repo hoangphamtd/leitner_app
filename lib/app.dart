@@ -52,8 +52,24 @@ class LeitnerApp extends StatelessWidget {
         ),
         // Hai dải bọc ngoài cùng để hiện được trên MỌI màn hình. Dải đỏ báo lỗi
         // nằm ngoài cùng: khi một màn hình con dựng hỏng, nó vẫn phải hiện được.
-        child: ErrorBanner(
-          child: UpdateBanner(child: child ?? const SizedBox.shrink()),
+        //
+        // Overlay.wrap là BẮT BUỘC ở đây, đừng gỡ đi.
+        //
+        // `MaterialApp.builder` bọc widget ở phía TRÊN Navigator, mà Overlay lại
+        // do chính Navigator tạo ra. Mọi widget cần Overlay đặt ở đây —
+        // `Tooltip`, `PopupMenuButton`, `DropdownButton` — sẽ ném lỗi:
+        //
+        //     No Overlay widget found.
+        //     RawTooltip widgets require an Overlay widget ancestor
+        //
+        // Đã xảy ra thật: hai dải dưới đây đều có nút kèm `tooltip`, nên mỗi lần
+        // dải hiện là một lần ném lỗi khi dựng. Cách chữa đúng là cấp cho chúng
+        // một Overlay, chứ không phải gỡ bỏ `tooltip` — gỡ đi thì chỉ hết triệu
+        // chứng, lần sau ai thêm widget cần Overlay vào đây lại vấp đúng bẫy cũ.
+        child: Overlay.wrap(
+          child: ErrorBanner(
+            child: UpdateBanner(child: child ?? const SizedBox.shrink()),
+          ),
         ),
       ),
       home: moChanDoan ? const DiagnosticsScreen() : const MainShell(),

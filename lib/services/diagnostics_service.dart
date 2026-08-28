@@ -40,7 +40,7 @@ class DartErrorSample {
 ///
 /// Lớp này cố ý rất nhẹ: chỉ ghi con số, không tính toán gì trong lúc đo, để
 /// bản thân việc đo không làm chậm thêm thứ đang cần đo.
-class DiagnosticsService {
+class DiagnosticsService extends ChangeNotifier {
   DiagnosticsService._();
 
   /// Dùng chung một thể hiện cho toàn app, vì số liệu phải gom về một chỗ.
@@ -108,6 +108,8 @@ class DiagnosticsService {
         message: error.toString(),
       ),
     );
+    // Báo ngay cho dải đỏ, thay vì để nó hỏi lại theo nhịp.
+    notifyListeners();
   }
 
   /// Bắt mọi lỗi của Flutter để hiện lên màn hình chẩn đoán.
