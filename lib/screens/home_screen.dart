@@ -11,6 +11,7 @@ import '../widgets/box_tile.dart';
 import '../widgets/busy_button.dart';
 import '../widgets/content_width_limit.dart';
 import '../widgets/install_guide_sheet.dart';
+import 'diagnostics_screen.dart';
 import 'study_screen.dart';
 
 /// Màn hình Tổng quan — điểm vào của ứng dụng.
@@ -108,7 +109,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Leitner'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Leitner'),
+        centerTitle: true,
+        // Lối vào màn hình Chẩn đoán đặt NGAY ĐÂY, không chỉ trong Cài đặt.
+        // Lý do: người dùng báo tab Cài đặt không mở được ở chế độ đã cài vào
+        // màn hình chính — mà đó lại đúng là lúc cần xem chẩn đoán nhất. Lối
+        // vào để trong chính chỗ đang hỏng thì vô dụng.
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.speed_rounded),
+            tooltip: 'Chẩn đoán',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DiagnosticsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: switch (deck.status) {
           DeckStatus.loading => const Center(

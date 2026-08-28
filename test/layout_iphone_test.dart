@@ -140,13 +140,16 @@ void main() {
         expect(
           widget.maxLines,
           1,
-          reason: 'Nhãn "$nhan" phải gói trong một dòng, '
+          reason:
+              'Nhãn "$nhan" phải gói trong một dòng, '
               'nếu không sẽ đè lên chữ khác như đã xảy ra',
         );
       }
     });
 
-    testWidgets('Nhãn lịch đủ ngắn để không phải thu nhỏ quá đà', (tester) async {
+    testWidgets('Nhãn lịch đủ ngắn để không phải thu nhỏ quá đà', (
+      tester,
+    ) async {
       // Chặn ngay từ dữ liệu: nhãn dài thì dù có FittedBox cũng bị thu nhỏ tới
       // mức không đọc nổi trên màn hình điện thoại.
       for (final nhan in BoxTile.scheduleLabels.values) {

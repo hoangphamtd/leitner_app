@@ -94,7 +94,13 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             const SizedBox(height: 16),
             _NhatKyCham(mau: _chan.touches),
             const SizedBox(height: 16),
-            _DanhSachLoi(loiJs: _web.jsErrors, loiDart: _chan.dartErrors),
+            // Gộp cả lỗi của những phiên trước: sự cố có thể xảy ra sớm tới mức
+            // app chết trước khi vẽ được màn hình nào, khi đó chỉ còn bản ghi
+            // lưu lại từ phiên cũ là dấu vết duy nhất.
+            _DanhSachLoi(
+              loiJs: [..._web.previousSessionErrors, ..._web.jsErrors],
+              loiDart: _chan.dartErrors,
+            ),
             const SizedBox(height: 16),
             _KhungChu(tieuDe: 'Trình duyệt', noiDung: _web.userAgent),
           ],

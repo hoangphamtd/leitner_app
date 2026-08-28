@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -26,7 +28,20 @@ import 'utils/logger.dart';
 
 final Logger _log = const Logger('main');
 
-Future<void> main() async {
+Future<void> main() {
+  // Chạy toàn bộ app trong một vùng có bắt lỗi.
+  //
+  // `FlutterError.onError` chỉ bắt lỗi phát sinh trong lúc dựng giao diện. Lỗi
+  // bất đồng bộ — hỏng khi mở kho, khi gọi API của trình duyệt — lọt hết ra
+  // ngoài và biến mất vào console. Ở chế độ đã cài vào màn hình chính thì không
+  // ai mở được console, nên những lỗi đó coi như tàng hình. Vùng này gom chúng
+  // lại để dải đỏ hiện lên được.
+  return runZonedGuarded(_khoiDong, (error, stack) {
+    DiagnosticsService.instance.recordDartError(error);
+  })!;
+}
+
+Future<void> _khoiDong() async {
   // Bấm giờ ngay từ dòng đầu: mọi con số ở màn hình Chẩn đoán đều tính từ đây.
   final chanDoan = DiagnosticsService.instance..start();
   final swBootstrap = Stopwatch()..start();

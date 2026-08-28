@@ -32,8 +32,10 @@ class WebMetrics {
     return (DateTime.now().millisecondsSinceEpoch - start).round();
   }
 
-  List<JsError> get jsErrors {
-    final raw = _kho?.getProperty<JSAny?>('loiJS'.toJS);
+  List<JsError> get jsErrors => _docDanhSachLoi('loiJS');
+
+  List<JsError> _docDanhSachLoi(String key) {
+    final raw = _kho?.getProperty<JSAny?>(key.toJS);
     if (!raw.isA<JSArray>()) return const [];
     final list = raw! as JSArray;
     final result = <JsError>[];
@@ -114,6 +116,33 @@ class WebMetrics {
   /// Service worker mới đã chiếm quyền từ trước (nhờ `skipWaiting`), nhưng mã
   /// đang chạy trong trang này là mã cũ đã nạp lúc mở — chỉ tải lại mới đổi được.
   void applyUpdate() => web.window.location.reload();
+
+  /// Phần đuôi địa chỉ NGAY LÚC MỞ TRANG.
+  ///
+  /// Phải dùng bản chụp sẵn từ `index.html`, không được đọc thẳng
+  /// `window.location.hash`: Flutter web quản lý địa chỉ bằng hash và ghi đè nó
+  /// thành '#/' khi khởi động, nên đọc muộn là mất sạch.
+  String get initialHash {
+    final value = _kho?.getProperty<JSAny?>('hashBanDau'.toJS);
+    return value.isA<JSString>() ? (value! as JSString).toDart : '';
+  }
+
+  /// Cách app đang được mở.
+  String get displayMode {
+    final value = _kho?.getProperty<JSAny?>('cheDoHienThi'.toJS);
+    return value.isA<JSString>() ? (value! as JSString).toDart : 'khong ro';
+  }
+
+  bool get isStandaloneMode => displayMode.startsWith('standalone');
+
+  /// Lỗi của các phiên chạy trước.
+  List<JsError> get previousSessionErrors => _docDanhSachLoi('loiPhienTruoc');
+
+  /// Xoá nhật ký lỗi.
+  void clearErrors() {
+    final fn = web.window.getProperty<JSAny?>('__leitnerXoaLoi'.toJS);
+    if (fn.isA<JSFunction>()) (fn! as JSFunction).callAsFunction();
+  }
 
   int _soNguyen(JSObject obj, String key) {
     final value = obj.getProperty<JSAny?>(key.toJS);

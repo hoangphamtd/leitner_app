@@ -50,4 +50,19 @@ class WebMetrics {
 
   /// Giục service worker mới vào việc rồi tải lại trang.
   void applyUpdate() {}
+
+  /// Phần đuôi địa chỉ ngay lúc mở trang, chụp trước khi Flutter ghi đè.
+  String get initialHash => '';
+
+  /// Cách app đang được mở: 'browser', 'standalone', 'standalone-ios'…
+  String get displayMode => 'khong chay tren web';
+
+  /// Đang chạy ở chế độ đã cài vào màn hình chính.
+  bool get isStandaloneMode => false;
+
+  /// Lỗi của những phiên chạy trước, đọc lại từ kho của trình duyệt.
+  List<JsError> get previousSessionErrors => const [];
+
+  /// Xoá nhật ký lỗi sau khi người dùng đã xem.
+  void clearErrors() {}
 }

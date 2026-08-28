@@ -6,6 +6,7 @@ import 'screens/diagnostics_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/diagnostics_service.dart';
 import 'utils/web_metrics/web_metrics.dart';
+import 'widgets/error_banner.dart';
 import 'widgets/update_banner.dart';
 
 /// Màu chủ đạo của ứng dụng.
@@ -25,11 +26,14 @@ class LeitnerApp extends StatelessWidget {
       (settings) => settings.themeMode,
     );
 
-    // Mở thẳng màn hình chẩn đoán khi địa chỉ kết thúc bằng #debug. Có đường
-    // này để gửi được một cái link đo đạc cho người dùng ở xa, không phải hướng
-    // dẫn họ bấm qua ba lớp menu.
+    // Mở thẳng màn hình chẩn đoán khi địa chỉ kết thúc bằng #debug.
+    //
+    // Đọc BẢN CHỤP hash lấy lúc mở trang, không đọc `location.hash` hiện tại:
+    // Flutter web quản lý địa chỉ bằng hash và ghi đè nó thành '#/' ngay khi
+    // khởi động, nên đọc muộn thì '#debug' đã biến mất. Đây đúng là lỗi khiến
+    // đường '#debug' không dùng được.
     const web = WebMetrics();
-    final moChanDoan = web.locationHash.contains('debug');
+    final moChanDoan = web.initialHash.contains('debug');
 
     return MaterialApp(
       title: 'Leitner — Học từ vựng',
@@ -46,9 +50,11 @@ class LeitnerApp extends StatelessWidget {
           event.position.dx,
           event.position.dy,
         ),
-        // Dải báo cập nhật bọc ngoài cùng để hiện được trên MỌI màn hình, kể cả
-        // lúc người dùng đang ở giữa buổi học.
-        child: UpdateBanner(child: child ?? const SizedBox.shrink()),
+        // Hai dải bọc ngoài cùng để hiện được trên MỌI màn hình. Dải đỏ báo lỗi
+        // nằm ngoài cùng: khi một màn hình con dựng hỏng, nó vẫn phải hiện được.
+        child: ErrorBanner(
+          child: UpdateBanner(child: child ?? const SizedBox.shrink()),
+        ),
       ),
       home: moChanDoan ? const DiagnosticsScreen() : const MainShell(),
     );

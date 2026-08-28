@@ -41,20 +41,74 @@
       // bản chạy ở máy phát triển, chưa qua triển khai.
       phienBan: '__BUILD_VERSION__',
       // Bật lên khi phát hiện có bản mới đã tải xong và sẵn sàng thay thế.
-      coBanMoi: false
+      coBanMoi: false,
+
+      // Phần đuôi địa chỉ NGAY LÚC MỞ TRANG.
+      //
+      // Bắt buộc phải chụp lại ở đây. Flutter web quản lý địa chỉ bằng phần
+      // hash và GHI ĐÈ nó thành '#/' ngay khi khởi động, nên tới lúc mã Dart
+      // chạy thì '#debug' đã bị xoá mất. Đó chính là lý do màn hình chẩn đoán
+      // không mở được bằng đường '#debug'.
+      hashBanDau: window.location.hash,
+
+      // Cách app đang được mở. Đây là mấu chốt của cả lần điều tra này: mở bằng
+      // trình duyệt thì chạy tốt, mở từ biểu tượng ngoài màn hình chính thì đơ.
+      cheDoHienThi: (function () {
+        try {
+          if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
+          if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
+          if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+          if (window.navigator.standalone === true) return 'standalone-ios';
+          return 'browser';
+        } catch (e) { return 'khong ro'; }
+      })()
     };
+
+    // Khoá lưu lỗi bền vững.
+    //
+    // Dải báo lỗi trong app chỉ hiện được khi app còn vẽ nổi. Nếu sự cố xảy ra
+    // sớm tới mức app chết trước khung hình đầu tiên thì chẳng còn gì để hiện.
+    // Vì vậy lỗi được ghi thêm vào kho của trình duyệt, để lần mở sau vẫn đọc
+    // lại được — ở chế độ standalone thì đây là cách duy nhất thấy lỗi.
+    var __KHOA_LOI = 'leitner_loi';
+
+    function __docLoiCu() {
+      try {
+        var raw = window.localStorage.getItem(__KHOA_LOI);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
 
     function __ghiLoi(nguon, thongDiep, chiTiet) {
       // Giữ tối đa 20 lỗi: điện thoại yếu mà lỗi lặp vô hạn thì chính mảng này
       // sẽ ăn hết bộ nhớ.
       if (window.__leitner.loiJS.length >= 20) return;
-      window.__leitner.loiJS.push({
+      var muc = {
         luc: Date.now() - window.__leitner.mocMoTrang,
         nguon: nguon,
         thongDiep: String(thongDiep).slice(0, 300),
-        chiTiet: chiTiet ? String(chiTiet).slice(0, 300) : null
-      });
+        chiTiet: chiTiet ? String(chiTiet).slice(0, 300) : null,
+        cheDo: window.__leitner.cheDoHienThi,
+        phienBan: window.__leitner.phienBan
+      };
+      window.__leitner.loiJS.push(muc);
+      try {
+        var cu = __docLoiCu();
+        cu.push(muc);
+        // Chỉ giữ 30 lỗi gần nhất qua các phiên, đủ để lần ngược mà không phình.
+        window.localStorage.setItem(__KHOA_LOI, JSON.stringify(cu.slice(-30)));
+      } catch (e) { /* hết chỗ lưu thì thôi, không được để việc ghi lỗi gây lỗi */ }
     }
+
+    /// Lỗi của những phiên trước, đọc lại từ kho.
+    window.__leitner.loiPhienTruoc = __docLoiCu();
+
+    /// Cho phép app xoá nhật ký lỗi sau khi người dùng đã xem.
+    window.__leitnerXoaLoi = function () {
+      try { window.localStorage.removeItem(__KHOA_LOI); } catch (e) {}
+      window.__leitner.loiJS = [];
+      window.__leitner.loiPhienTruoc = [];
+    };
 
     window.addEventListener('error', function (e) {
       __ghiLoi('window.onerror', e.message, e.filename + ':' + e.lineno);
