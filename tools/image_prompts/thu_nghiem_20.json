@@ -1,0 +1,197 @@
+{
+  "ghiChu": "20 từ dùng để so ba mẫu sinh ảnh: 10 cụ thể + 10 trừu tượng khó nhất. 60 ảnh tất cả (20 từ x 3 mẫu).",
+  "phongCachChung": "flat vector illustration, clean simple shapes, soft muted palette of warm sand, sage green, dusty blue and terracotta, plain off-white background, one soft flat shadow, even line weight, people drawn as simple stylised figures with plain rounded heads and no detailed facial features, centred composition with generous margins, square 1:1, absolutely no text, letters, numbers, logos or signage anywhere",
+  "loaiTru": "text, letters, words, numbers, captions, logos, watermarks, signage, photorealism, realistic human faces, portrait likeness, cluttered background, harsh neon colours, heavy gradients, 3D render",
+  "tu": [
+    {
+      "word": "neighbour",
+      "meaning": "hàng xóm",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "hai ngôi nhà",
+      "moTaAnh": "Two small houses standing side by side separated by a low garden fence, one figure on each side leaning over the fence and waving to the other.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "receipt",
+      "meaning": "hoá đơn, biên lai",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "giấy in",
+      "moTaAnh": "Close-up of a long narrow paper slip curling out of a small counter-top till printer, a hand holding its loose end, the paper bearing only faint blank grey ruled lines.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "luggage",
+      "meaning": "hành lý",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "vali",
+      "moTaAnh": "Two wheeled suitcases and a soft duffel bag standing together on an airport floor beside a row of empty waiting seats.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "kettle",
+      "meaning": "ấm đun nước",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "ấm đun nước",
+      "moTaAnh": "A kettle sitting on a lit stove burner with steam curling from its spout, an empty mug and a tea bag waiting on the counter beside it.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "staircase",
+      "meaning": "cầu thang",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "cầu thang",
+      "moTaAnh": "A wooden staircase with a handrail rising and turning between two floors of a house, seen from the bottom step looking up.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "needle",
+      "meaning": "cây kim",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "kim chỉ",
+      "moTaAnh": "Extreme close-up of a sewing needle held between two fingertips, a length of thread passing through its eye, a loose button and folded fabric on the surface below.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "mirror",
+      "meaning": "cái gương",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "gương",
+      "moTaAnh": "A round wall mirror hanging above a washbasin, showing the reflected back of a figure standing in front of it together with the room behind them.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "crowd",
+      "meaning": "đám đông",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "đám đông",
+      "moTaAnh": "A dense mass of many small stylised figures filling a public square, seen from slightly above so that heads and shoulders overlap into a continuous texture.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "harbour",
+      "meaning": "bến cảng",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "thuyền",
+      "moTaAnh": "A row of fishing boats moored along a stone quay, mooring ropes tied to bollards, loading cranes and low warehouses lining the waterfront behind.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "curtain",
+      "meaning": "rèm cửa",
+      "loaiTu": "cụ thể",
+      "vatTheChinh": "rèm",
+      "moTaAnh": "A pair of long fabric curtains hanging at a tall window, one side drawn back by a hand so daylight falls across the floor of the room.",
+      "danhGia": "giúp nhiều",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "appointment",
+      "meaning": "cuộc hẹn, lịch hẹn",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "cửa phòng khám",
+      "moTaAnh": "A clinic corridor at a set hour: one figure sits waiting on a chair beside a closed consulting-room door with a round wall clock above, while a second figure in a white coat opens the door and gestures them in with an open palm.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Vật thể chính đổi thành cửa phòng khám để tách khỏi 'deadline' (đồng hồ). Vẫn dễ bị đọc thành 'bác sĩ'.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "schedule",
+      "meaning": "lịch trình, thời gian biểu",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "bảng kế hoạch",
+      "moTaAnh": "A weekly planner board ruled into a grid of empty rectangles, a hand pressing one coloured sticky note into a slot while other slots already hold notes of different colours.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Không có chữ thì lưới màu chỉ gợi 'kế hoạch' chung chung.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "afford",
+      "meaning": "đủ tiền để mua, kham nổi",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "cân thăng bằng",
+      "moTaAnh": "A two-pan balance scale standing on a shop counter with a boxed television on one pan and a small stack of coins on the other, the two pans resting exactly level, a relaxed shopper beside it with open hands.",
+      "danhGia": "giúp ít",
+      "ghiChu": "VIẾT LẠI để tách khỏi nhóm 'tiền'. Cái cân nay là vật thể chính, tiền chỉ còn là chi tiết phụ. Ẩn dụ cân bằng vẫn phải học mới hiểu.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "improve",
+      "meaning": "cải thiện, tiến bộ",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "cây trong chậu",
+      "moTaAnh": "The same potted plant drawn twice side by side in one frame: on the left small with two drooping leaves, on the right taller and full, a curved arrow sweeping from the left plant to the right one.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Rất dễ bị đọc thành 'lớn lên'. Đã tách khỏi 'progress' bằng cách chọn hai chủ đề khác hẳn: cây so với công trường.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "progress",
+      "meaning": "tiến độ",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "công trường",
+      "moTaAnh": "One construction site drawn as three stages left to right within a single frame: bare foundation, half-built timber frame, finished house, with one wide arrow running along the bottom.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Cùng cấu trúc 'trước - sau' với 'improve' nhưng đã cố ý chọn chủ đề khác hẳn.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "permission",
+      "meaning": "sự cho phép",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "dây chắn",
+      "moTaAnh": "At a doorway closed off by a rope barrier, a uniformed attendant unhooks one end of the rope and gestures a waiting visitor through with an open palm.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Có thể bị đọc thành 'lối vào' hoặc 'bảo vệ'.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "insurance",
+      "meaning": "bảo hiểm",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "vòm kính",
+      "moTaAnh": "A small house and a parked car standing together beneath a large transparent glass dome while hail and a single lightning bolt strike its outer surface and slide away.",
+      "danhGia": "giúp ít",
+      "ghiChu": "VIẾT LẠI: bản cũ dùng ẩn dụ ô che, đụng thẳng với thẻ 'umbrella'. Vòm kính giữ được ý 'được che chở' mà không mượn vật thể của thẻ khác.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "patience",
+      "meaning": "sự kiên nhẫn",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "cần câu",
+      "moTaAnh": "A figure sitting still on a riverbank holding a fishing rod with the line resting in the water, an empty bucket beside them, long low shadows stretching across the grass.",
+      "danhGia": "giúp ít",
+      "ghiChu": "VIẾT LẠI: bản cũ tả hàng người chờ, đụng thẳng với 'queue'. Câu cá chở ý 'chờ lâu mà không sốt ruột' rõ hơn và không mượn bối cảnh của thẻ khác.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "delay",
+      "meaning": "sự chậm trễ",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "sân ga",
+      "moTaAnh": "Passengers sitting on their suitcases along an empty station platform, the track stretching away with no train on it, a large platform clock overhead and a blank departure board.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Có thể bị đọc thành 'nhà ga' hoặc 'chờ đợi'.",
+      "trongLoThuNghiem": true
+    },
+    {
+      "word": "relieved",
+      "meaning": "cảm thấy nhẹ nhõm",
+      "loaiTu": "trừu tượng",
+      "vatTheChinh": "bàn làm việc",
+      "moTaAnh": "A figure sitting back in a desk chair with shoulders dropped and both hands resting open on the desk, a soft curl of exhaled breath drawn beside them, a completed stack of papers pushed to one side and the laptop closed.",
+      "danhGia": "giúp ít",
+      "ghiChu": "Cảm xúc phải đọc qua dáng người vì không được vẽ mặt rõ nét.",
+      "trongLoThuNghiem": true
+    }
+  ]
+}
