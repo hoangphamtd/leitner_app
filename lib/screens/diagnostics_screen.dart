@@ -412,7 +412,7 @@ class _NhatKyCham extends StatelessWidget {
               style: TextStyle(fontStyle: FontStyle.italic),
             )
           else
-            for (final m in mau)
+            for (final m in mau) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
@@ -454,6 +454,20 @@ class _NhatKyCham extends StatelessWidget {
                   ],
                 ),
               ),
+              // Thứ THẬT SỰ nhận cú chạm. Toạ độ đúng không có nghĩa là chạm
+              // trúng nút — dòng này cho biết ngay chạm rơi vào đâu.
+              if (m.nhanBoi.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 64, bottom: 4),
+                  child: Text(
+                    '↳ ${m.nhanBoi.join(" < ")}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
         ],
       ),
     );

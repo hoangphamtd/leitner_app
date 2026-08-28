@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/settings_provider.dart';
@@ -17,6 +18,36 @@ const Color seedColor = Color(0xFF2E6F5E);
 /// Giao diện dùng bảng màu sinh từ [seedColor] cho cả chế độ sáng và tối, theo
 /// đúng yêu cầu ở Phần 4. Chế độ hiển thị lấy từ [SettingsProvider] nên đổi
 /// trong màn hình Cài đặt là thấy hiệu lực ngay, không cần khởi động lại.
+/// Khoá của lớp ghi nhận chạm ở gốc cây, để chạy lại phép thử chạm từ đúng đó.
+final GlobalKey _khoaGocCham = GlobalKey();
+
+/// Số lớp trên cùng của đường chạm được ghi lại.
+///
+/// Bốn là đủ để nhận ra thứ đang nhận cú chạm mà không làm nhật ký dài dòng.
+const int _soLopGhiLai = 4;
+
+/// Xem cú chạm ở [viTri] thật sự rơi vào widget nào.
+///
+/// Vì sao cần: toạ độ chạm đúng KHÔNG có nghĩa là chạm trúng nút. Đã có lần một
+/// hộp lỗi vô hình nằm đè lên cả dải thông báo và nuốt sạch thao tác, mà nhật ký
+/// chạm vẫn đẹp vì lớp ghi nhận ở gốc cây là `translucent` — nó ghi nhận kể cả
+/// khi không nút nào nhận được. Ghi thêm đường chạm thì lần sau nhìn là biết
+/// ngay chạm trúng cái gì, khỏi phải đoán.
+///
+/// Trả về tên các lớp vẽ trên cùng của đường chạm. Dùng tên lớp chứ không dùng
+/// tên widget vì `debugCreator` chỉ có ở bản gỡ rối, còn lỗi thì chỉ xuất hiện
+/// ở bản phát hành trên máy thật.
+List<String> _doAiNhanCham(Offset viTri) {
+  final o = _khoaGocCham.currentContext?.findRenderObject();
+  if (o is! RenderBox) return const [];
+  final ketQua = BoxHitTestResult();
+  o.hitTest(ketQua, position: viTri);
+  return [
+    for (final muc in ketQua.path.take(_soLopGhiLai))
+      muc.target.runtimeType.toString(),
+  ];
+}
+
 class LeitnerApp extends StatelessWidget {
   const LeitnerApp({super.key});
 
@@ -45,10 +76,12 @@ class LeitnerApp extends StatelessWidget {
       // nút. Chạm vào nút mà không thấy gì xảy ra chính là triệu chứng cần đo,
       // nên không thể chỉ đo ở những nơi đã có sẵn xử lý.
       builder: (context, child) => Listener(
+        key: _khoaGocCham,
         behavior: HitTestBehavior.translucent,
         onPointerDown: (event) => DiagnosticsService.instance.recordTouch(
           event.position.dx,
           event.position.dy,
+          nhanBoi: _doAiNhanCham(event.localPosition),
         ),
         // Hai dải bọc ngoài cùng để hiện được trên MỌI màn hình. Dải đỏ báo lỗi
         // nằm ngoài cùng: khi một màn hình con dựng hỏng, nó vẫn phải hiện được.

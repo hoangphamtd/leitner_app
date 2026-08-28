@@ -27,6 +27,12 @@ class TouchSample {
   final int? thoX;
   final int? thoY;
 
+  /// Tên các lớp vẽ trên cùng của đường chạm, tức thứ THẬT SỰ nhận cú chạm.
+  ///
+  /// Toạ độ đúng không có nghĩa là chạm trúng nút. Danh sách này cho biết ngay
+  /// cú chạm rơi vào đâu, khỏi phải đoán.
+  final List<String> nhanBoi;
+
   /// Độ lệch dọc giữa hai hệ toạ độ. Null nếu không đo được.
   int? get lechDoc => thoY == null ? null : y - thoY!;
 
@@ -37,6 +43,7 @@ class TouchSample {
     required this.y,
     this.thoX,
     this.thoY,
+    this.nhanBoi = const [],
   });
 }
 
@@ -93,7 +100,7 @@ class DiagnosticsService extends ChangeNotifier {
   /// khung hình sau đó đã vẽ xong. Khoảng cách giữa hai mốc chính là độ trễ mà
   /// người dùng cảm nhận — nếu luồng chính đang bận, khung hình bị hoãn và con
   /// số này phình lên.
-  void recordTouch(double x, double y) {
+  void recordTouch(double x, double y, {List<String> nhanBoi = const []}) {
     final atMs = _uptime.elapsedMilliseconds;
     // Đọc ngay, không đợi tới khung hình sau: tới lúc đó có thể đã có cú chạm
     // khác ghi đè.
@@ -112,6 +119,7 @@ class DiagnosticsService extends ChangeNotifier {
           y: y.round(),
           thoX: tho?.x,
           thoY: tho?.y,
+          nhanBoi: nhanBoi,
         ),
       );
     });
