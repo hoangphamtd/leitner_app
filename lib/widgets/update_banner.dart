@@ -21,6 +21,12 @@ class UpdateBanner extends StatefulWidget {
 
   const UpdateBanner({super.key, required this.child, this.forceVisible});
 
+  /// Khoá của nút đóng dải, để test tìm được mà không cần tới `tooltip`.
+  static const Key nutDeSau = Key('update_banner_de_sau');
+
+  /// Khoá bọc riêng phần ruột của dải, để test khoanh vùng được chính xác.
+  static const Key ruotDai = Key('update_banner_ruot');
+
   @override
   State<UpdateBanner> createState() => _UpdateBannerState();
 }
@@ -87,6 +93,7 @@ class _UpdateBannerState extends State<UpdateBanner>
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                key: UpdateBanner.ruotDai,
                 decoration: BoxDecoration(
                   color: scheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(14),
@@ -128,8 +135,22 @@ class _UpdateBannerState extends State<UpdateBanner>
                     ),
                     IconButton(
                       onPressed: () => setState(() => _daBoQua = true),
-                      icon: const Icon(Icons.close, size: 20),
-                      tooltip: 'Để sau',
+                      // CỐ Ý KHÔNG dùng `tooltip`. Tooltip cần Overlay; nếu Overlay vắng
+                      // mặt thì nút này ném lỗi lúc dựng và Flutter thay cả nhánh bằng
+                      // ErrorWidget — hộp lỗi đó phình ra nuốt trọn cú chạm của cả dải,
+                      // khiến chính nút TẢI LẠI cũng chết. Đã xảy ra thật trên máy người
+                      // dùng: dải báo có bản mới mà không bấm được gì để nạp bản mới.
+                      //
+                      // `Overlay.wrap` trong app.dart đã chặn được lỗi đó, nhưng dải này
+                      // là lối thoát duy nhất khi người dùng kẹt ở bản cũ — nó không được
+                      // phép phụ thuộc vào bất cứ thứ gì có thể vắng mặt. `semanticLabel`
+                      // vẫn cho trình đọc màn hình đọc được mà không cần Overlay.
+                      key: UpdateBanner.nutDeSau,
+                      icon: const Icon(
+                        Icons.close,
+                        size: 20,
+                        semanticLabel: 'Để sau',
+                      ),
                       color: scheme.onTertiaryContainer,
                     ),
                   ],

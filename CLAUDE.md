@@ -110,10 +110,30 @@ RawTooltip widgets require an Overlay widget ancestor
 Đã xảy ra thật (28/08/2026): hai dải thông báo bọc ngoài cùng đều có `IconButton`
 kèm `tooltip`, nên **mỗi lần dải hiện là một lần ném lỗi khi dựng**.
 
-Cách chữa: bọc bằng `Overlay.wrap(child: ...)` của chính Flutter. **Đừng gỡ bỏ
-`tooltip` cho hết lỗi** — đó là vá triệu chứng, lần sau ai thêm widget cần Overlay
-vào đây lại vấp đúng bẫy cũ. Cũng đừng tự viết lớp bọc Overlay: bản tự viết dễ
-quên gọi `remove()` trước `dispose()` và sẽ nổ assert lúc gỡ cây.
+Cách chữa: bọc bằng `Overlay.wrap(child: ...)` của chính Flutter. Đừng tự viết
+lớp bọc Overlay: bản tự viết dễ quên gọi `remove()` trước `dispose()` và sẽ nổ
+assert lúc gỡ cây.
+
+### Hậu quả thật của lỗi này — nó KHÔNG chỉ là một dòng lỗi
+
+Khi `Tooltip` ném lỗi lúc dựng, Flutter thay cả nhánh đó bằng **ErrorWidget**.
+Trong bản phát hành, `RenderErrorBox` phình ra chiếm hết vùng của dải và **nuốt
+trọn mọi cú chạm**, còn nút thật bị đẩy ra ngoài màn hình (đo được: `y = 50041`).
+
+Đã xảy ra thật trên iPhone (28/08/2026), và triệu chứng đánh lừa hoàn toàn:
+
+* Mọi nút **trong dải** chết, mọi nút khác vẫn bình thường.
+* Độ trễ chạm đo được **0–13 ms** — vì `Listener` ở gốc cây là
+  `HitTestBehavior.translucent`, nó **ghi nhận cú chạm kể cả khi không nút nào
+  nhận được**. Nhật ký chạm đẹp không chứng minh nút có ăn.
+* Kết quả là vòng luẩn quẩn: dải báo có bản mới, mà nút nạp bản mới lại chết.
+
+Vì vậy hai dải thông báo có **quy tắc riêng, nghiêm hơn**: chúng là lối thoát duy
+nhất của người dùng đã cài app vào màn hình chính (không thanh địa chỉ, không nút
+tải lại), nên **không được phép chứa bất cứ widget nào cần Overlay** — kể cả khi
+app.dart đã có `Overlay.wrap`. Dùng `Icon(semanticLabel: ...)` thay cho `tooltip`.
+Nhóm test *"Dải phải bấm được KỂ CẢ khi không có Overlay"* trong
+`test/standalone_touch_test.dart` khoá lại điều này; **đừng gỡ**.
 
 ## Dải thông báo — xếp dọc, đừng đè lên
 

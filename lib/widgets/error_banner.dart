@@ -14,6 +14,9 @@ import '../utils/web_metrics/web_metrics.dart';
 /// Dải này cố ý bọc ở GỐC cây widget, ngay dưới [MaterialApp], nên nó hiện được
 /// kể cả khi một màn hình con dựng lỗi hoặc điều hướng không đi tới đâu.
 class ErrorBanner extends StatefulWidget {
+  /// Khoá bọc riêng phần ruột của dải, để test khoanh vùng được chính xác.
+  static const Key ruotDai = Key('error_banner_ruot');
+
   final Widget child;
 
   /// Ép dải hiện ra với số lỗi cho trước, chỉ dùng cho kiểm thử.
@@ -118,6 +121,7 @@ class _ErrorBannerState extends State<ErrorBanner> with WidgetsBindingObserver {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
               child: Container(
+                key: ErrorBanner.ruotDai,
                 decoration: BoxDecoration(
                   color: const Color(0xFFB3261E),
                   borderRadius: BorderRadius.circular(12),
@@ -158,9 +162,15 @@ class _ErrorBannerState extends State<ErrorBanner> with WidgetsBindingObserver {
                             ),
                             IconButton(
                               onPressed: () => setState(() => _daDong = true),
-                              icon: const Icon(Icons.close, size: 18),
+                              // Không dùng `tooltip` — xem lý do dài ở update_banner.dart. Dải này
+                              // còn quan trọng hơn: nó là thứ duy nhất cho người dùng thấy lỗi khi
+                              // máy không mở được công cụ gỡ rối.
+                              icon: const Icon(
+                                Icons.close,
+                                size: 18,
+                                semanticLabel: 'Ẩn dải này',
+                              ),
                               color: Colors.white,
-                              tooltip: 'Ẩn dải này',
                             ),
                           ],
                         ),

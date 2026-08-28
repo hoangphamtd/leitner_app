@@ -69,6 +69,10 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             _Nhom(
               tieuDe: 'Máy và bộ vẽ',
               dong: [
+                // Mã phiên bản để ngay đây, không bắt đi tìm ở màn hình Cài
+                // đặt: khi app hỏng tới mức phải mở màn hình này thì câu hỏi
+                // đầu tiên luôn là "máy đang chạy bản nào".
+                ('Mã phiên bản', _web.buildVersion),
                 ('Bộ vẽ đang dùng', _web.renderer),
                 ('Số lõi CPU', '${_web.hardwareConcurrency}'),
                 (

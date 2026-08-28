@@ -53,6 +53,10 @@ Flashcard makeCard({required String id, bool isActive = true}) {
   );
 }
 
+/// Bọc Overlay hoặc không, để đo được ảnh hưởng của chính lớp bọc đó.
+Widget _boc({required bool coOverlay, required Widget child}) =>
+    coOverlay ? Overlay.wrap(child: child) : SizedBox.expand(child: child);
+
 void main() {
   late FakeCardRepository cards;
   late FakeStudyLogRepository logs;
@@ -73,6 +77,7 @@ void main() {
     required EdgeInsets viewPadding,
     bool hienDaiCapNhat = false,
     int soLoi = 0,
+    bool coOverlay = true,
   }) {
     final leitner = LeitnerService();
     return MultiProvider(
@@ -127,7 +132,8 @@ void main() {
               event.position.dx,
               event.position.dy,
             ),
-            child: Overlay.wrap(
+            child: _boc(
+              coOverlay: coOverlay,
               child: ErrorBanner(
                 forceErrorCount: soLoi,
                 child: UpdateBanner(
@@ -281,6 +287,247 @@ void main() {
       await tester.tap(nut, warnIfMissed: true);
       await tester.pumpAndSettle();
       expect(find.text('Chẩn đoán'), findsWidgets);
+    });
+  });
+
+  group('Chạm bằng toạ độ thô — dựng lại đúng máy của người dùng', () {
+    /// Đúng kích thước máy người dùng báo về: 393 x 793.
+    ///
+    /// Nhóm test này cố ý KHÔNG tìm nút theo tên rồi `tap()`. Cách đó tự tính
+    /// tâm nút rồi bắn thẳng vào đó, nên nó chỉ trả lời được "nút có nhận chạm
+    /// nếu chạm trúng tâm không" — trong khi câu hỏi thật là "ngón tay chạm vào
+    /// toạ độ X trên màn hình thì có tới được nút không". Hai câu khác nhau: nếu
+    /// có một lớp phủ vô hình chắn ngang, cách đầu vẫn xanh.
+    const Size kMayThat = Size(393, 793);
+
+    Future<void> datMayThat(WidgetTester tester) async {
+      tester.view.physicalSize = kMayThat;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('Nút X trong dải: chạm đúng toạ độ thì dải phải biến mất', (
+      tester,
+    ) async {
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(viewPadding: kLeStandalone, hienDaiCapNhat: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Có bản cập nhật'), findsOneWidget);
+
+      // Lấy toạ độ thật của nút X rồi chạm vào đúng đó bằng toạ độ thô.
+      final nutX = find.byKey(UpdateBanner.nutDeSau);
+      final oX = tester.getRect(nutX);
+      // ignore: avoid_print
+      print('DO-DAC nutX=$oX');
+
+      await tester.tapAt(oX.center);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Có bản cập nhật'),
+        findsNothing,
+        reason:
+            'Chạm vào toạ độ ${oX.center} không tới được nút X — '
+            'có thứ gì đó đang chắn giữa ngón tay và nút',
+      );
+    });
+
+    testWidgets('Nút TẢI LẠI: toạ độ thô phải chạm tới đúng nút đó', (
+      tester,
+    ) async {
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(viewPadding: kLeStandalone, hienDaiCapNhat: true),
+      );
+      await tester.pumpAndSettle();
+
+      final nut = find.widgetWithText(FilledButton, 'TẢI LẠI');
+      final o = tester.getRect(nut);
+      // ignore: avoid_print
+      print('DO-DAC nutTaiLai=$o');
+
+      final ketQua = tester.hitTestOnBinding(o.center);
+      final render = tester.renderObject(nut);
+      final trongDuongDan = ketQua.path.any((e) => e.target == render);
+
+      // In ra ba lớp trên cùng để biết CÁI GÌ đang đứng trước nút.
+      // ignore: avoid_print
+      print(
+        'DO-DAC lop tren cung tai ${o.center}: '
+        '${ketQua.path.take(4).map((e) => e.target.runtimeType).join(" < ")}',
+      );
+
+      expect(
+        trongDuongDan,
+        isTrue,
+        reason:
+            'Chạm vào toạ độ ${o.center} không tới được nút TẢI LẠI. '
+            'Đường chạm thật: ${ketQua.path.take(6).map((e) => e.target.runtimeType).join(" < ")}',
+      );
+    });
+
+    testWidgets('Chạm đúng toạ độ người dùng báo: (280, 100) và (360, 97)', (
+      tester,
+    ) async {
+      // Hai cụm toạ độ lấy nguyên từ nhật ký chạm trên iPhone thật.
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(viewPadding: kLeStandalone, hienDaiCapNhat: true),
+      );
+      await tester.pumpAndSettle();
+
+      for (final diem in [const Offset(280, 100), const Offset(360, 97)]) {
+        final ketQua = tester.hitTestOnBinding(diem);
+        // ignore: avoid_print
+        print(
+          'DO-DAC cham $diem -> '
+          '${ketQua.path.take(6).map((e) => e.target.runtimeType).join(" < ")}',
+        );
+      }
+
+      // Chạm vào toạ độ của nút X mà người dùng báo: dải phải đóng.
+      await tester.tapAt(const Offset(360, 97));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Có bản cập nhật'),
+        findsNothing,
+        reason: 'Toạ độ (360, 97) người dùng bấm không tới được nút X',
+      );
+    });
+  });
+
+  group('Dải phải bấm được KỂ CẢ khi không có Overlay', () {
+    /// Đây là lớp phòng vệ thứ hai, và là lớp quan trọng hơn.
+    ///
+    /// Dải cập nhật là lối thoát DUY NHẤT khi người dùng kẹt ở bản cũ: máy đã
+    /// cài vào màn hình chính thì không có thanh địa chỉ, không có nút tải lại.
+    /// Nếu dải hỏng thì không còn đường nào ra — đúng vòng luẩn quẩn đã xảy ra
+    /// thật: dải báo có bản mới, mà nút nạp bản mới lại không bấm được.
+    ///
+    /// Vì vậy dải không được phép phụ thuộc vào bất cứ thứ gì có thể vắng mặt.
+    /// Nhóm test này cố ý dựng cây KHÔNG có Overlay. Nếu ai đó thêm `Tooltip`,
+    /// `PopupMenuButton` hay `DropdownButton` vào dải, nhánh đó sẽ ném lỗi lúc
+    /// dựng, Flutter thay bằng ErrorWidget, và hộp lỗi ấy nuốt trọn cú chạm của
+    /// cả dải — các test dưới đây khi đó phải đỏ.
+    const Size kMayThat = Size(393, 793);
+
+    Future<void> datMayThat(WidgetTester tester) async {
+      tester.view.physicalSize = kMayThat;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('Không có Overlay: dựng dải không được ném lỗi nào', (
+      tester,
+    ) async {
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(
+          viewPadding: kLeStandalone,
+          hienDaiCapNhat: true,
+          coOverlay: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Dải cập nhật đang dùng một widget cần Overlay',
+      );
+      expect(find.byType(ErrorWidget), findsNothing);
+    });
+
+    testWidgets('Không có Overlay: chạm toạ độ thô vẫn đóng được dải', (
+      tester,
+    ) async {
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(
+          viewPadding: kLeStandalone,
+          hienDaiCapNhat: true,
+          coOverlay: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final oX = tester.getRect(find.byKey(UpdateBanner.nutDeSau));
+      await tester.tapAt(oX.center);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Có bản cập nhật'),
+        findsNothing,
+        reason: 'Chạm vào ${oX.center} không tới được nút đóng dải',
+      );
+    });
+
+    testWidgets('Không có Overlay: nút TẢI LẠI vẫn nhận được chạm', (
+      tester,
+    ) async {
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(
+          viewPadding: kLeStandalone,
+          hienDaiCapNhat: true,
+          coOverlay: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final nut = find.widgetWithText(FilledButton, 'TẢI LẠI');
+      final o = tester.getRect(nut);
+
+      // Nút phải nằm đúng trong màn hình. Khi nhánh dải bị thay bằng ErrorWidget,
+      // nút thật bị đẩy ra y = 50041 — ngoài màn hình, trong khi hộp lỗi vô hình
+      // chiếm chỗ nó. Đo được thật, và đúng là thứ đã xảy ra trên máy người dùng.
+      expect(
+        o.top >= 0 && o.bottom <= kMayThat.height,
+        isTrue,
+        reason: 'Nút TẢI LẠI nằm ngoài màn hình: $o',
+      );
+
+      WidgetController.hitTestWarningShouldBeFatal = true;
+      addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
+      await tester.tapAt(o.center);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Hai dải không được chứa widget cần Overlay', (tester) async {
+      // Chặn ngay từ cấu trúc, không đợi tới lúc chạm.
+      await datMayThat(tester);
+      await tester.pumpWidget(
+        dungApp(
+          viewPadding: kLeStandalone,
+          hienDaiCapNhat: true,
+          soLoi: 3,
+          coOverlay: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Chỉ soi bên trong hai dải. Phần ứng dụng nằm dưới Navigator nên có
+      // Overlay sẵn, dùng Tooltip ở đó là bình thường.
+      for (final dai in [UpdateBanner.ruotDai, ErrorBanner.ruotDai]) {
+        expect(find.byKey(dai, skipOffstage: false), findsOneWidget);
+        for (final loai in [Tooltip, PopupMenuButton, DropdownButton]) {
+          expect(
+            find.descendant(
+              of: find.byKey(dai, skipOffstage: false),
+              matching: find.byType(loai, skipOffstage: false),
+              skipOffstage: false,
+            ),
+            findsNothing,
+            reason:
+                '$loai cần Overlay. Đặt nó trong dải là làm dải hỏng khi '
+                'thiếu Overlay, mà dải là lối thoát duy nhất của người dùng '
+                'đang kẹt ở bản cũ.',
+          );
+        }
+      }
     });
   });
 
