@@ -6,13 +6,11 @@ Tài liệu này dành cho người vận hành, không cần biết lập trìn
 
 ## 1. Địa chỉ app
 
-Sau khi triển khai xong, app nằm ở:
-
 ```
-https://<TEN-TAI-KHOAN-GITHUB>.github.io/leitner_app/
+https://hoangphamtd.github.io/leitner_app/
 ```
 
-Thay `<TEN-TAI-KHOAN-GITHUB>` bằng tên tài khoản GitHub của bạn.
+Kho mã: https://github.com/hoangphamtd/leitner_app
 
 **Dấu gạch chéo cuối là bắt buộc.** Thiếu nó thì GitHub tự chuyển hướng, nhưng
 gửi link cho người khác thì nên gửi đúng dạng có dấu gạch chéo.
@@ -162,14 +160,24 @@ chạy khi không có mạng.
 
 ---
 
-## 6. Kho riêng tư có ảnh hưởng gì không?
+## 6. Vì sao kho để công khai
 
-Không. Kho để **riêng tư** nhưng trang GitHub Pages vẫn **công khai** — ai có
-link đều mở được. Mã nguồn thì chỉ mình bạn thấy.
+Ban đầu kho được tạo ở chế độ riêng tư, nhưng GitHub từ chối bật Pages với thông
+báo *"Your current plan does not support GitHub Pages for this repository"* —
+Pages cho kho riêng tư đòi gói trả phí. Vì vậy kho đã chuyển sang **công khai**.
 
-*(Lưu ý: GitHub Pages cho kho riêng tư yêu cầu tài khoản trả phí ở một số gói.
-Nếu bật Pages mà báo lỗi cần nâng cấp, chuyển kho sang công khai là dùng được
-ngay — app này không chứa mật khẩu hay dữ liệu riêng tư nào.)*
+Trước khi chuyển, mã nguồn đã được rà soát: không có khoá API, mật khẩu, file
+`.env` hay bất kỳ thông tin nhạy cảm nào. Dữ liệu học của người dùng nằm trên máy
+họ, không liên quan tới kho mã.
+
+Một điều nên biết: lịch sử commit mang địa chỉ email `hoangphamtd@gmail.com` và
+giờ ai cũng đọc được. Đây là chuyện bình thường với mọi dự án mã nguồn mở. Muốn
+kín email cho các commit về sau thì bật *Keep my email addresses private* trong
+GitHub → Settings → Emails, rồi đổi `git config user.email` ở máy sang địa chỉ
+dạng `...@users.noreply.github.com`.
+
+Muốn kho kín hoàn toàn thì phải nâng lên **GitHub Pro** (khoảng 4 đô la Mỹ mỗi
+tháng), sau đó chuyển kho về riêng tư — Pages vẫn chạy.
 
 ---
 
