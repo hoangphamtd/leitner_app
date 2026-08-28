@@ -39,25 +39,32 @@ class _CardShell extends StatelessWidget {
 
 /// Nút loa phát âm.
 ///
-/// Giai đoạn này nút được vẽ đúng vị trí nhưng CHƯA hoạt động — phần phát âm
-/// (`PronunciationService` với `flutter_tts`) thuộc giai đoạn sau. Nút để ở
-/// trạng thái vô hiệu hoá chứ không bấm được mà im lặng, để người dùng không
-/// tưởng là hỏng.
+/// Nút chỉ gọi callback được truyền vào chứ không tự biết gì về `flutter_tts` —
+/// việc phát tiếng nằm trọn trong `PronunciationService`, đúng yêu cầu Phần 5.
+/// Nhờ vậy đổi nguồn tiếng sang file mp3 thu sẵn sẽ không phải sửa widget này.
 class SpeakerButton extends StatelessWidget {
   /// Nhãn cho trình đọc màn hình.
   final String semanticLabel;
 
-  const SpeakerButton({super.key, required this.semanticLabel});
+  final VoidCallback? onPressed;
+
+  const SpeakerButton({super.key, required this.semanticLabel, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: null,
-      tooltip: 'Phát âm (có ở giai đoạn sau)',
-      icon: const Icon(Icons.volume_up_rounded),
-      iconSize: 28,
-      style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: semanticLabel,
+        icon: const Icon(Icons.volume_up_rounded),
+        iconSize: 28,
+        style: IconButton.styleFrom(
+          backgroundColor: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest,
+        ),
       ),
     );
   }
@@ -67,7 +74,10 @@ class SpeakerButton extends StatelessWidget {
 class CardFront extends StatelessWidget {
   final Flashcard card;
 
-  const CardFront({super.key, required this.card});
+  /// Gọi khi người học bấm nút loa. Null thì nút bị vô hiệu hoá.
+  final VoidCallback? onSpeakWord;
+
+  const CardFront({super.key, required this.card, this.onSpeakWord});
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +114,10 @@ class CardFront extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              SpeakerButton(semanticLabel: 'Đọc từ ${card.word}'),
+              SpeakerButton(
+                semanticLabel: 'Đọc từ ${card.word}',
+                onPressed: onSpeakWord,
+              ),
             ],
           ),
         ],
@@ -145,7 +158,10 @@ class _CardImage extends StatelessWidget {
 class CardBack extends StatelessWidget {
   final Flashcard card;
 
-  const CardBack({super.key, required this.card});
+  /// Gọi khi người học bấm nút loa của câu ví dụ.
+  final VoidCallback? onSpeakSentence;
+
+  const CardBack({super.key, required this.card, this.onSpeakSentence});
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +195,10 @@ class CardBack extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SpeakerButton(semanticLabel: 'Đọc câu ví dụ'),
+                  SpeakerButton(
+                    semanticLabel: 'Đọc câu ví dụ',
+                    onPressed: onSpeakSentence,
+                  ),
                 ],
               ),
             ),

@@ -6,6 +6,8 @@ import 'hive_registrar.g.dart';
 import 'app.dart';
 import 'data/sample_vocabulary.dart';
 import 'providers/deck_provider.dart';
+import 'providers/library_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/study_provider.dart';
 import 'repositories/card_repository.dart';
 import 'repositories/hive_card_repository.dart';
@@ -16,6 +18,7 @@ import 'repositories/session_state_repository.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/study_log_repository.dart';
 import 'services/leitner_service.dart';
+import 'services/pronunciation_service.dart';
 import 'services/vocabulary_importer.dart';
 import 'utils/logger.dart';
 
@@ -46,6 +49,7 @@ Future<void> main() async {
   await _seedSampleVocabularyIfEmpty(cardRepository);
 
   final leitner = LeitnerService();
+  final pronunciation = PronunciationService();
 
   runApp(
     MultiProvider(
@@ -66,6 +70,16 @@ Future<void> main() async {
             sessionStateRepository: sessionStateRepository,
             leitner: leitner,
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              LibraryProvider(cardRepository: cardRepository)..refresh(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(
+            repository: settingsRepository,
+            pronunciation: pronunciation,
+          )..load(),
         ),
       ],
       child: const LeitnerApp(),

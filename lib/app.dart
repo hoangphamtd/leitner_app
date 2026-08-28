@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'screens/home_screen.dart';
+import 'providers/settings_provider.dart';
+import 'screens/main_shell.dart';
 
 /// Màu chủ đạo của ứng dụng.
 const Color seedColor = Color(0xFF2E6F5E);
@@ -8,20 +10,24 @@ const Color seedColor = Color(0xFF2E6F5E);
 /// Gốc cây widget.
 ///
 /// Giao diện dùng bảng màu sinh từ [seedColor] cho cả chế độ sáng và tối, theo
-/// đúng yêu cầu ở Phần 4. Hiện lấy theo cài đặt hệ thống; việc cho người dùng
-/// tự chọn sáng/tối thuộc màn hình Cài đặt ở giai đoạn sau.
+/// đúng yêu cầu ở Phần 4. Chế độ hiển thị lấy từ [SettingsProvider] nên đổi
+/// trong màn hình Cài đặt là thấy hiệu lực ngay, không cần khởi động lại.
 class LeitnerApp extends StatelessWidget {
   const LeitnerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.select<SettingsProvider, ThemeMode>(
+      (settings) => settings.themeMode,
+    );
+
     return MaterialApp(
       title: 'Leitner — Học từ vựng',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      themeMode: themeMode,
+      home: const MainShell(),
     );
   }
 

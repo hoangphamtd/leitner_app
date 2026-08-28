@@ -11,6 +11,7 @@ import 'package:leitner_app/models/study_log.dart';
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(AppSettingsAdapter());
+    registerAdapter(AppThemeModeAdapter());
     registerAdapter(FlashcardAdapter());
     registerAdapter(SessionStateAdapter());
     registerAdapter(StudyLogAdapter());
@@ -20,6 +21,7 @@ extension HiveRegistrar on HiveInterface {
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(AppSettingsAdapter());
+    registerAdapter(AppThemeModeAdapter());
     registerAdapter(FlashcardAdapter());
     registerAdapter(SessionStateAdapter());
     registerAdapter(StudyLogAdapter());

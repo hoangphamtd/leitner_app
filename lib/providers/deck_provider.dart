@@ -175,6 +175,37 @@ class DeckProvider extends ChangeNotifier {
     return leitner.buildTodayQueue(dueCards);
   }
 
+  /// Kích hoạt đúng những thẻ người dùng đã chọn ở màn hình Thư viện.
+  ///
+  /// Khác [activateNewCards] ở chỗ danh sách thẻ do người dùng chỉ định chứ
+  /// không lấy tuần tự từ đầu thư viện. Hạn mức mỗi ngày vẫn được áp dụng y
+  /// nguyên, nên chọn nhiều hơn suất còn lại thì phần dư bị cắt.
+  ///
+  /// Trả về các thẻ THẬT SỰ được kích hoạt, để tầng gọi ghi xuống kho và biết
+  /// có bao nhiêu thẻ bị cắt.
+  Future<List<Flashcard>> activateSpecificCards(
+    List<Flashcard> chosen, {
+    DateTime? now,
+  }) async {
+    final moment = now ?? DateTime.now();
+    try {
+      final result = leitner.activateNewCards(
+        libraryCards: chosen,
+        settings: await settingsRepository.load(),
+        now: moment,
+      );
+      if (result.activatedCards.isEmpty) return const [];
+
+      await cardRepository.saveAll(result.activatedCards);
+      await settingsRepository.save(result.updatedSettings);
+      await refresh(now: moment);
+      return result.activatedCards;
+    } catch (error, stackTrace) {
+      _log.error('Không kích hoạt được thẻ đã chọn', error, stackTrace);
+      rethrow;
+    }
+  }
+
   /// Kích hoạt thêm thẻ mới từ thư viện vào Hộp 1.
   ///
   /// Trả về số thẻ thật sự được kích hoạt — có thể ít hơn [count] khi đã chạm

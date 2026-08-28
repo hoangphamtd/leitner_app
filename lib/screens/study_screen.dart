@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/settings_provider.dart';
 import '../providers/study_provider.dart';
 import '../services/study_session.dart';
 import '../widgets/card_faces.dart';
@@ -114,8 +115,20 @@ class _StudyBody extends StatelessWidget {
                 child: FlipCard(
                   showBack: study.isRevealed,
                   onTap: () => context.read<StudyProvider>().reveal(),
-                  front: CardFront(card: card),
-                  back: CardBack(card: card),
+                  front: CardFront(
+                    card: card,
+                    onSpeakWord: () => context
+                        .read<SettingsProvider>()
+                        .pronunciation
+                        .speakWord(card),
+                  ),
+                  back: CardBack(
+                    card: card,
+                    onSpeakSentence: () => context
+                        .read<SettingsProvider>()
+                        .pronunciation
+                        .speakSentence(card),
+                  ),
                 ),
               ),
             ),
