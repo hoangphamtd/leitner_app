@@ -20,6 +20,9 @@ class FakeCardRepository implements CardRepository {
   /// rằng mỗi lượt trả lời đều được lưu ngay.
   final List<Flashcard> saved = [];
 
+  /// Bật lên để [saveAll] ném lỗi, dùng kiểm tra nhánh xử lý sự cố.
+  bool failOnSaveAll = false;
+
   /// Nạp sẵn dữ liệu đầu vào cho một bài test.
   void seed(List<Flashcard> cards) {
     for (final card in cards) {
@@ -66,6 +69,7 @@ class FakeCardRepository implements CardRepository {
 
   @override
   Future<void> saveAll(List<Flashcard> cards) async {
+    if (failOnSaveAll) throw const RepositoryException('loi gia lap');
     for (final card in cards) {
       _store[card.id] = card;
       saved.add(card);

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/flashcard.dart';
 import '../providers/deck_provider.dart';
 import '../providers/library_provider.dart';
+import '../widgets/busy_button.dart';
 import '../widgets/content_width_limit.dart';
 import 'card_form_screen.dart';
 
@@ -355,9 +356,13 @@ class _SelectionActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deck = context.watch<DeckProvider>();
+    final libraryState = context.watch<LibraryProvider>();
     final selectable = library.selectedInactiveCards.length;
     final quota = deck.remainingQuota;
     final canActivate = selectable > 0 && quota > 0;
+    // Hai thao tác này đều ghi dữ liệu, nên khoá cả hai khi một trong hai đang
+    // chạy: xoá thẻ giữa lúc đang kích hoạt sẽ để lại kho ở trạng thái nửa vời.
+    final dangBan = deck.isBusy || libraryState.isBusy;
 
     return SafeArea(
       child: Padding(
@@ -376,26 +381,29 @@ class _SelectionActions extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: BusyButton(
+                    isBusy: dangBan,
                     onPressed: () => _confirmDelete(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.error,
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('XOÁ'),
+                    icon: Icons.delete_outline,
+                    label: 'XOÁ',
+                    filled: false,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   flex: 2,
-                  child: FilledButton.icon(
+                  child: BusyButton(
+                    isBusy: dangBan,
                     onPressed: canActivate ? () => _activate(context) : null,
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('ĐƯA VÀO HỘP 1'),
+                    icon: Icons.play_arrow_rounded,
+                    label: 'ĐƯA VÀO HỘP 1',
                   ),
                 ),
               ],

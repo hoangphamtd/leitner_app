@@ -30,6 +30,21 @@ class LibraryProvider extends ChangeNotifier {
   bool _loading = true;
   bool get isLoading => _loading;
 
+  bool _busy = false;
+
+  /// Đang chạy một thao tác ghi hàng loạt (xoá nhiều thẻ).
+  ///
+  /// Xoá nhiều thẻ phải gọi lần lượt từng thẻ nên tốn thời gian thấy rõ trên
+  /// máy chậm. Không có cờ này thì người dùng bấm xoá nhiều lần và mỗi lần lại
+  /// chạy thêm một vòng.
+  bool get isBusy => _busy;
+
+  void _setBusy(bool value) {
+    if (_busy == value) return;
+    _busy = value;
+    notifyListeners();
+  }
+
   String _searchTerm = '';
   String get searchTerm => _searchTerm;
 
@@ -210,14 +225,20 @@ class LibraryProvider extends ChangeNotifier {
 
   /// Xoá tất cả thẻ đang chọn.
   Future<int> deleteSelected() async {
-    final ids = _selectedIds.toList();
-    for (final id in ids) {
-      await cardRepository.delete(id);
+    if (_busy) return 0;
+    _setBusy(true);
+    try {
+      final ids = _selectedIds.toList();
+      for (final id in ids) {
+        await cardRepository.delete(id);
+      }
+      _selectedIds.clear();
+      await refresh();
+      _log.info('Đã xoá ${ids.length} thẻ');
+      return ids.length;
+    } finally {
+      _setBusy(false);
     }
-    _selectedIds.clear();
-    await refresh();
-    _log.info('Đã xoá ${ids.length} thẻ');
-    return ids.length;
   }
 
   /// Ghi các thẻ vừa được kích hoạt xuống kho rồi đọc lại danh sách.

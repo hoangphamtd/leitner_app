@@ -9,6 +9,7 @@ import '../providers/library_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/pronunciation_service.dart';
 import '../widgets/content_width_limit.dart';
+import 'diagnostics_screen.dart';
 
 /// Màn hình Cài đặt.
 class SettingsScreen extends StatelessWidget {
@@ -48,6 +49,8 @@ class SettingsScreen extends StatelessWidget {
                     _ThemeSection(settings: settings),
                     const SizedBox(height: 24),
                     const _BackupSection(),
+                    const SizedBox(height: 24),
+                    const _ChanDoanSection(),
                   ],
                 ),
               ),
@@ -388,5 +391,27 @@ class _BackupSectionState extends State<_BackupSection> {
         SnackBar(content: Text('Không nhập được. $error')),
       );
     }
+  }
+}
+
+/// Lối vào màn hình chẩn đoán.
+class _ChanDoanSection extends StatelessWidget {
+  const _ChanDoanSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Section(
+      title: 'Chẩn đoán hiệu năng',
+      description:
+          'Hiện các con số đo được trên chính máy này: thời gian khởi động, '
+          'độ trễ mỗi lần chạm, và mọi lỗi bắt được. Dùng khi app chạy chậm.',
+      child: OutlinedButton.icon(
+        onPressed: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const DiagnosticsScreen())),
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        icon: const Icon(Icons.speed_rounded),
+        label: const Text('MỞ MÀN HÌNH CHẨN ĐOÁN'),
+      ),
+    );
   }
 }

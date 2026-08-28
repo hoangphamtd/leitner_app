@@ -29,6 +29,43 @@
   <title>Leitner — Học từ vựng</title>
   <link rel="manifest" href="manifest.json">
 
+  <script>
+    // Máy đo phải chạy TRƯỚC mọi thứ khác, vì nó cần bắt được cả những lỗi xảy
+    // ra trong lúc Flutter đang nạp — lúc đó chưa có màn hình nào để hiện lỗi.
+    // Trên điện thoại không mở được console nên đây là cách duy nhất thấy lỗi.
+    window.__leitner = {
+      mocMoTrang: Date.now(),
+      khungDauTien_ms: null,
+      loiJS: []
+    };
+
+    function __ghiLoi(nguon, thongDiep, chiTiet) {
+      // Giữ tối đa 20 lỗi: điện thoại yếu mà lỗi lặp vô hạn thì chính mảng này
+      // sẽ ăn hết bộ nhớ.
+      if (window.__leitner.loiJS.length >= 20) return;
+      window.__leitner.loiJS.push({
+        luc: Date.now() - window.__leitner.mocMoTrang,
+        nguon: nguon,
+        thongDiep: String(thongDiep).slice(0, 300),
+        chiTiet: chiTiet ? String(chiTiet).slice(0, 300) : null
+      });
+    }
+
+    window.addEventListener('error', function (e) {
+      __ghiLoi('window.onerror', e.message, e.filename + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      __ghiLoi('promise', e.reason && e.reason.message ? e.reason.message : e.reason, null);
+    });
+
+    // Flutter bắn sự kiện này khi vẽ xong khung hình đầu tiên.
+    window.addEventListener('flutter-first-frame', function () {
+      if (window.__leitner.khungDauTien_ms === null) {
+        window.__leitner.khungDauTien_ms = Date.now() - window.__leitner.mocMoTrang;
+      }
+    });
+  </script>
+
   <style>
     /* Nền của trang trước khi Flutter vẽ xong, để không loé trắng rồi mới đổi
        màu. Hai giá trị khớp với background_color trong manifest và với bảng màu

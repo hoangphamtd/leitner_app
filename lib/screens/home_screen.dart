@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../providers/study_provider.dart';
 import '../utils/platform_info/platform_info.dart';
 import '../widgets/box_tile.dart';
+import '../widgets/busy_button.dart';
 import '../widgets/content_width_limit.dart';
 import '../widgets/install_guide_sheet.dart';
 import 'study_screen.dart';
@@ -304,11 +305,14 @@ class _StudyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.icon(
-      // Không có thẻ đến hạn thì nút bị vô hiệu hoá, đúng yêu cầu Phần 4.
+    return BusyButton(
+      // Vừa chặn khi không có thẻ đến hạn (yêu cầu Phần 4), vừa chặn khi đang
+      // có thao tác ghi dở dang — vào buổi học giữa lúc kho đang đổi thì hàng
+      // đợi dựng ra sẽ thiếu đúng những thẻ vừa được kích hoạt.
+      isBusy: deck.isBusy,
       onPressed: deck.canStudy ? () => _startSession(context) : null,
-      icon: const Icon(Icons.school_rounded, size: 26),
-      label: Text('HỌC HÔM NAY (${deck.dueCount} từ)'),
+      icon: Icons.school_rounded,
+      label: 'HỌC HÔM NAY (${deck.dueCount} từ)',
     );
   }
 
@@ -431,10 +435,12 @@ class _LibrarySection extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
+          BusyButton(
+            isBusy: deck.isBusy,
             onPressed: canActivate ? () => _activate(context) : null,
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('THÊM TỪ MỚI VÀO HỘP 1'),
+            icon: Icons.add_circle_outline,
+            label: 'THÊM TỪ MỚI VÀO HỘP 1',
+            filled: false,
           ),
         ],
       ),

@@ -18,6 +18,7 @@ import 'repositories/hive_study_log_repository.dart';
 import 'repositories/session_state_repository.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/study_log_repository.dart';
+import 'services/diagnostics_service.dart';
 import 'services/leitner_service.dart';
 import 'services/pronunciation_service.dart';
 import 'services/vocabulary_importer.dart';
@@ -26,7 +27,12 @@ import 'utils/logger.dart';
 final Logger _log = const Logger('main');
 
 Future<void> main() async {
+  // Bấm giờ ngay từ dòng đầu: mọi con số ở màn hình Chẩn đoán đều tính từ đây.
+  final chanDoan = DiagnosticsService.instance..start();
+  final swBootstrap = Stopwatch()..start();
+
   WidgetsFlutterBinding.ensureInitialized();
+  chanDoan.hookFlutterErrors();
 
   // Trên web, Hive CE lưu xuống IndexedDB của trình duyệt. Không cần chỉ định
   // thư mục, cũng không cần quyền gì — toàn bộ dữ liệu nằm trên máy người học.
@@ -42,15 +48,25 @@ Future<void> main() async {
   final SessionStateRepository sessionStateRepository =
       HiveSessionStateRepository();
 
+  // Mở kho là khâu chạm ổ đĩa nặng nhất lúc khởi động, nên đo riêng.
+  final swHive = Stopwatch()..start();
   await cardRepository.init();
   await logRepository.init();
   await settingsRepository.init();
   await sessionStateRepository.init();
+  swHive.stop();
+  chanDoan.hiveInitMs = swHive.elapsedMilliseconds;
 
-  await _seedSampleVocabularyIfEmpty(cardRepository);
+  final swSeed = Stopwatch()..start();
+  final daMoi = await _seedSampleVocabularyIfEmpty(cardRepository);
+  swSeed.stop();
+  if (daMoi) chanDoan.seedMs = swSeed.elapsedMilliseconds;
 
   final leitner = LeitnerService();
   final pronunciation = PronunciationService();
+
+  swBootstrap.stop();
+  chanDoan.bootstrapMs = swBootstrap.elapsedMilliseconds;
 
   runApp(
     MultiProvider(
@@ -101,9 +117,11 @@ Future<void> main() async {
 /// Chỉ chạy khi kho thẻ hoàn toàn rỗng, để không bao giờ ghi đè lên dữ liệu học
 /// thật của người dùng. Thẻ nạp vào nằm im trong thư viện với `isActive = false`
 /// — người học phải chủ động kích hoạt thì mới vào vòng học.
-Future<void> _seedSampleVocabularyIfEmpty(CardRepository repository) async {
+/// Trả về true nếu thật sự có mồi dữ liệu, để màn hình Chẩn đoán biết con số
+/// đo được có ý nghĩa hay chỉ là lần chạy thường.
+Future<bool> _seedSampleVocabularyIfEmpty(CardRepository repository) async {
   final existing = await repository.getAll();
-  if (existing.isNotEmpty) return;
+  if (existing.isNotEmpty) return false;
 
   final result = VocabularyImporter().importFromMaps(
     sampleVocabulary,
@@ -116,4 +134,5 @@ Future<void> _seedSampleVocabularyIfEmpty(CardRepository repository) async {
   }
   await repository.saveAll(result.newCards);
   _log.info('Đã mồi ${result.importedCount} từ vựng mẫu vào thư viện');
+  return true;
 }

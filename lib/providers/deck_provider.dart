@@ -83,6 +83,22 @@ class DeckProvider extends ChangeNotifier {
   /// Có thể bắt đầu buổi học hay không.
   bool get canStudy => _dueCount > 0;
 
+  bool _busy = false;
+
+  /// Đang chạy một thao tác ghi dữ liệu.
+  ///
+  /// Giao diện PHẢI vô hiệu hoá nút và hiện vòng quay chờ khi cờ này bật. Không
+  /// có nó, người dùng trên máy chậm thấy nút bấm mà không có gì xảy ra, tưởng
+  /// hỏng nên bấm tiếp — mỗi lần bấm lại chạy thêm một lượt ghi và đọc lại toàn
+  /// bộ kho, càng bấm càng chậm.
+  bool get isBusy => _busy;
+
+  void _setBusy(bool value) {
+    if (_busy == value) return;
+    _busy = value;
+    notifyListeners();
+  }
+
   SessionState? _resumableSession;
 
   /// Buổi học dở của HÔM NAY, còn thẻ để học tiếp. Null nếu không có.
@@ -188,6 +204,8 @@ class DeckProvider extends ChangeNotifier {
     DateTime? now,
   }) async {
     final moment = now ?? DateTime.now();
+    if (_busy) return const [];
+    _setBusy(true);
     try {
       final result = leitner.activateNewCards(
         libraryCards: chosen,
@@ -203,6 +221,8 @@ class DeckProvider extends ChangeNotifier {
     } catch (error, stackTrace) {
       _log.error('Không kích hoạt được thẻ đã chọn', error, stackTrace);
       rethrow;
+    } finally {
+      _setBusy(false);
     }
   }
 
@@ -212,6 +232,10 @@ class DeckProvider extends ChangeNotifier {
   /// hạn mức trong ngày hoặc thư viện không còn đủ thẻ.
   Future<int> activateNewCards({int? count, DateTime? now}) async {
     final moment = now ?? DateTime.now();
+    // Chặn bấm chồng: lượt trước chưa xong thì bỏ qua lượt sau, thay vì xếp
+    // hàng chạy tiếp và làm máy chậm càng thêm chậm.
+    if (_busy) return 0;
+    _setBusy(true);
     try {
       final library = await cardRepository.getInactiveCards();
       final result = leitner.activateNewCards(
@@ -235,6 +259,8 @@ class DeckProvider extends ChangeNotifier {
       _errorMessage = 'Không kích hoạt được thẻ mới. $error';
       notifyListeners();
       rethrow;
+    } finally {
+      _setBusy(false);
     }
   }
 }

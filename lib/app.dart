@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/settings_provider.dart';
+import 'screens/diagnostics_screen.dart';
 import 'screens/main_shell.dart';
+import 'services/diagnostics_service.dart';
+import 'utils/web_metrics/web_metrics.dart';
 
 /// Màu chủ đạo của ứng dụng.
 const Color seedColor = Color(0xFF2E6F5E);
@@ -21,13 +24,30 @@ class LeitnerApp extends StatelessWidget {
       (settings) => settings.themeMode,
     );
 
+    // Mở thẳng màn hình chẩn đoán khi địa chỉ kết thúc bằng #debug. Có đường
+    // này để gửi được một cái link đo đạc cho người dùng ở xa, không phải hướng
+    // dẫn họ bấm qua ba lớp menu.
+    const web = WebMetrics();
+    final moChanDoan = web.locationHash.contains('debug');
+
     return MaterialApp(
       title: 'Leitner — Học từ vựng',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
       themeMode: themeMode,
-      home: const MainShell(),
+      // Bọc toàn bộ app để ghi lại MỌI lần chạm, kể cả chạm vào chỗ không có
+      // nút. Chạm vào nút mà không thấy gì xảy ra chính là triệu chứng cần đo,
+      // nên không thể chỉ đo ở những nơi đã có sẵn xử lý.
+      builder: (context, child) => Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) => DiagnosticsService.instance.recordTouch(
+          event.position.dx,
+          event.position.dy,
+        ),
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: moChanDoan ? const DiagnosticsScreen() : const MainShell(),
     );
   }
 
